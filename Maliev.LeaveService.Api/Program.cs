@@ -1,4 +1,4 @@
-using Maliev.Aspire.ServiceDefaults;
+using Microsoft.Extensions.Hosting;
 using Maliev.LeaveService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Maliev.LeaveService.Domain.Authorization;
@@ -61,21 +61,15 @@ builder.Services.AddScoped<ILeavePolicyRepository, LeavePolicyRepository>();
 builder.Services.AddScoped<ILeaveApprovalRepository, LeaveApprovalRepository>();
 builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
 
-builder.Services.AddHttpClient<INotificationService, NotificationService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["NotificationService:BaseUrl"] ?? "http://notification-service");
-}).AddStandardResilienceHandler();
-
-builder.Services.AddHttpClient<EmployeeServiceClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["EmployeeService:Url"] ?? "http://employee-service");
-}).AddStandardResilienceHandler();
+builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
+builder.AddServiceClient<EmployeeServiceClient>("EmployeeService");
 
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
 builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>();
 
 var app = builder.Build();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 // --- 8. Database Migrations ---
 try
