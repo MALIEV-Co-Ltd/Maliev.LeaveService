@@ -1,6 +1,7 @@
-﻿using Maliev.LeaveService.Application.Interfaces;
+﻿using Maliev.MessagingContracts.Generated;
+using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Enums;
-using Maliev.LeaveService.Domain.Events.Consumed;
+// using Maliev.LeaveService.Domain.Events.Consumed; // Removed
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -29,9 +30,11 @@ public class EmployeeTerminatedEventConsumer : IConsumer<EmployeeTerminatedEvent
     public async Task Consume(ConsumeContext<EmployeeTerminatedEvent> context)
     {
         var @event = context.Message;
-        _logger.LogInformation("Processing EmployeeTerminatedEvent for Employee: {EmployeeId}", @event.EmployeeId);
+        var payload = @event.Payload; // Access payload
 
-        var pendingRequests = await _requestRepository.GetByEmployeeIdAsync(@event.EmployeeId);
+        _logger.LogInformation("Processing EmployeeTerminatedEvent for Employee: {EmployeeId}", payload.EmployeeId);
+
+        var pendingRequests = await _requestRepository.GetByEmployeeIdAsync(payload.EmployeeId);
         var activePending = pendingRequests.Where(r => r.Status == LeaveRequestStatus.Pending);
 
         foreach (var request in activePending)

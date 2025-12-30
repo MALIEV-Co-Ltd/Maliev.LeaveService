@@ -1,6 +1,7 @@
-﻿using Maliev.LeaveService.Application.Interfaces;
+﻿using Maliev.MessagingContracts.Generated;
+using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
-using Maliev.LeaveService.Domain.Events.Consumed;
+// using Maliev.LeaveService.Domain.Events.Consumed; // Removed
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +30,9 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
     public async Task Consume(ConsumeContext<EmployeeCreatedEvent> context)
     {
         var @event = context.Message;
-        _logger.LogInformation("Processing EmployeeCreatedEvent for Employee: {EmployeeId}", @event.EmployeeId);
+        var payload = @event.Payload; // Access payload
+
+        _logger.LogInformation("Processing EmployeeCreatedEvent for Employee: {EmployeeId}", payload.EmployeeId);
 
         var currentYear = DateTime.UtcNow.Year;
         var activePolicies = await _policyRepository.GetAllAsync();
@@ -37,7 +40,7 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
         foreach (var policy in activePolicies.Where(p => p.IsActive))
         {
             var existingBalance = await _balanceRepository.GetByEmployeeAndTypeAsync(
-                @event.EmployeeId, 
+                payload.EmployeeId, 
                 policy.LeaveType, 
                 currentYear);
 
@@ -46,7 +49,7 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
                 var newBalance = new LeaveBalance
                 {
                     Id = Guid.NewGuid(),
-                    EmployeeId = @event.EmployeeId,
+                    EmployeeId = payload.EmployeeId,
                     LeaveType = policy.LeaveType,
                     Year = currentYear,
                     Entitled = policy.DefaultEntitlement,
@@ -57,7 +60,7 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
 
                 await _balanceRepository.AddAsync(newBalance);
                 _logger.LogInformation("Initialized {LeaveType} balance for employee {EmployeeId}", 
-                    policy.LeaveType, @event.EmployeeId);
+                    policy.LeaveType, payload.EmployeeId);
             }
         }
     }
