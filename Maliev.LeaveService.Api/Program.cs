@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Maliev.Aspire.ServiceDefaults;
 using Maliev.LeaveService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Maliev.LeaveService.Domain.Authorization;
@@ -62,7 +63,12 @@ builder.Services.AddScoped<ILeaveApprovalRepository, LeaveApprovalRepository>();
 builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
 
 builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
-builder.AddServiceClient<EmployeeServiceClient>("EmployeeService");
+builder.Services.AddHttpClient<EmployeeServiceClient>(client =>
+{
+    var baseUrl = builder.Configuration.GetValue<string>("ServiceUrls:EmployeeService")
+                  ?? throw new InvalidOperationException("EmployeeService URL not configured");
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
