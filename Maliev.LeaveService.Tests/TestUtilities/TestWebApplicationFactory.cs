@@ -68,6 +68,17 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
         builder.ConfigureTestServices(services =>
         {
+            // Remove all IAM registration-related services to avoid connection errors in tests
+            var iamDescriptors = services
+                .Where(d => d.ServiceType.Name.Contains("IAM") ||
+                            d.ImplementationType?.Name.Contains("IAM") == true)
+                .ToList();
+
+            foreach (var descriptor in iamDescriptors)
+            {
+                services.Remove(descriptor);
+            }
+
             services.PostConfigureAll<JwtBearerOptions>(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
