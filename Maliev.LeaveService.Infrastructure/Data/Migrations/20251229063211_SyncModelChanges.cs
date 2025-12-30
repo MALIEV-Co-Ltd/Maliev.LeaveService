@@ -10,9 +10,8 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "level",
-                table: "leave_approvals");
+            // Note: "level" column never existed in leave_approvals table, so we don't need to drop it
+            // migrationBuilder.DropColumn(name: "level", table: "leave_approvals");
 
             migrationBuilder.RenameColumn(
                 name: "expiration_period_months",
@@ -38,12 +37,8 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                 table: "leave_approvals",
                 newName: "decision_timestamp");
 
-            migrationBuilder.AddColumn<int>(
-                name: "level",
-                table: "leave_approvals",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
+            // Note: "level" column never existed, so we don't add it in rollback
+            // migrationBuilder.AddColumn<int>(name: "level", table: "leave_approvals", type: "integer", nullable: false, defaultValue: 0);
         }
     }
 }
