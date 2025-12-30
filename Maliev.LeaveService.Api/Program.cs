@@ -78,14 +78,7 @@ var app = builder.Build();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 // --- 8. Database Migrations ---
-try
-{
-    await app.MigrateDatabaseAsync<LeaveDbContext>();
-}
-catch (Exception ex)
-{
-    logger.LogError(ex, "Database migration failed");
-}
+await app.MigrateDatabaseAsync<LeaveDbContext>();
 
 // --- 9. Middleware Pipeline ---
 app.UseStandardMiddleware();
