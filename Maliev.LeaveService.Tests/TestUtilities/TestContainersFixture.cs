@@ -8,20 +8,20 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 public class TestContainersFixture : IAsyncLifetime
 {
     public PostgreSqlContainer PostgreSqlContainer { get; } = new PostgreSqlBuilder()
-        .WithImage("postgres:18")
+        .WithImage("postgres:18-alpine")
         .WithDatabase("leave_db")
         .WithUsername("postgres")
         .WithPassword("postgres")
         .Build();
 
     public RabbitMqContainer RabbitMqContainer { get; } = new RabbitMqBuilder()
-        .WithImage("rabbitmq:3-management")
+        .WithImage("rabbitmq:4.2-alpine")
         .WithUsername("guest")
         .WithPassword("guest")
         .Build();
 
     public RedisContainer RedisContainer { get; } = new RedisBuilder()
-        .WithImage("redis:7")
+        .WithImage("redis:8.4-alpine")
         .Build();
 
     public async Task InitializeAsync()

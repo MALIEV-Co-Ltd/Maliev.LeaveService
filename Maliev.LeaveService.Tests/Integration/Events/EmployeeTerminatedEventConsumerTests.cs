@@ -31,11 +31,23 @@ public class EmployeeTerminatedEventConsumerTests : IClassFixture<TestWebApplica
     {
         // Arrange
         var employeeId = Guid.NewGuid();
-        var @event = new EmployeeTerminatedEvent
-        {
-            EmployeeId = employeeId,
-            TerminationDate = DateTimeOffset.UtcNow
-        };
+        var @event = new Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent(
+            Guid.NewGuid(),
+            "EmployeeTerminatedEvent",
+            Maliev.MessagingContracts.Generated.MessageType.Event,
+            "1.0",
+            "Test",
+            new List<string> { "LeaveService" },
+            Guid.NewGuid(),
+            null,
+            DateTimeOffset.UtcNow,
+            false,
+            new Maliev.MessagingContracts.Generated.EmployeeTerminatedEventPayload(
+                employeeId,
+                DateTimeOffset.UtcNow,
+                "Test",
+                true)
+        );
 
         using var scope = _factory.Services.CreateScope();
         var harness = scope.ServiceProvider.GetRequiredService<ITestHarness>();
@@ -50,7 +62,7 @@ public class EmployeeTerminatedEventConsumerTests : IClassFixture<TestWebApplica
         await harness.Bus.Publish(@event);
         
         // Wait for consumer
-        await harness.Consumed.Any<EmployeeTerminatedEvent>();
+        await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent>();
 
         // Assert
         using var verifyScope = _factory.Services.CreateScope();

@@ -31,13 +31,25 @@ public class EmployeeCreatedEventConsumerTests : IClassFixture<TestWebApplicatio
     {
         // Arrange
         var employeeId = Guid.NewGuid();
-        var @event = new EmployeeCreatedEvent
-        {
-            EmployeeId = employeeId,
-            EmployeeNumber = "EMP001",
-            StartDate = DateTimeOffset.UtcNow,
-            DepartmentId = Guid.NewGuid()
-        };
+        var @event = new Maliev.MessagingContracts.Generated.EmployeeCreatedEvent(
+            Guid.NewGuid(),
+            "EmployeeCreatedEvent",
+            Maliev.MessagingContracts.Generated.MessageType.Event,
+            "1.0",
+            "Test",
+            new List<string> { "LeaveService" },
+            Guid.NewGuid(),
+            null,
+            DateTimeOffset.UtcNow,
+            false,
+            new Maliev.MessagingContracts.Generated.EmployeeCreatedEventPayload(
+                employeeId,
+                "EMP001",
+                DateTimeOffset.UtcNow,
+                Guid.NewGuid(),
+                null,
+                null)
+        );
 
         using var scope = _factory.Services.CreateScope();
         var harness = scope.ServiceProvider.GetRequiredService<ITestHarness>();
@@ -51,7 +63,7 @@ public class EmployeeCreatedEventConsumerTests : IClassFixture<TestWebApplicatio
         await harness.Bus.Publish(@event);
         
         // Wait for consumer
-        await harness.Consumed.Any<EmployeeCreatedEvent>();
+        await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>();
 
         // Assert
         using var verifyScope = _factory.Services.CreateScope();

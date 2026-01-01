@@ -23,8 +23,8 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder().WithImage("postgres:18-alpine").Build();
-    private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:7-alpine").Build();
-    private readonly RabbitMqContainer _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4-management-alpine").Build();
+    private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine").Build();
+    private readonly RabbitMqContainer _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine").Build();
     private readonly RSA _testRsa = RSA.Create(2048);
 
     public string CreateTestToken(string userId = "test-user", string[]? roles = null)
@@ -80,13 +80,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new RsaSecurityKey(_testRsa)
                 };
-            });
-
-            // Ensure MassTransit waits until started for tests to avoid race conditions
-            services.Configure<MassTransitHostOptions>(options =>
-            {
-                options.WaitUntilStarted = true;
-                options.StartTimeout = TimeSpan.FromSeconds(30);
             });
 
             services.AddMassTransitTestHarness();

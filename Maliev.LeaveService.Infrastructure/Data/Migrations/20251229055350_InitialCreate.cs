@@ -39,7 +39,7 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                     default_entitlement = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     accrual_rate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     max_carry_forward = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
-                    max_consecutive_days = table.Column<int>(type: "integer", nullable: false),
+                    expiration_period_months = table.Column<int>(type: "integer", nullable: false),
                     required_approval_levels = table.Column<int>(type: "integer", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -78,7 +78,7 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                     approver_id = table.Column<Guid>(type: "uuid", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     comments = table.Column<string>(type: "text", nullable: true),
-                    decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    decision_timestamp = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

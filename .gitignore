@@ -55,3 +55,4 @@ nunit-*.xml
 # Test result files
 *test_results*.txt
 *_test_*.txt
+*.log
