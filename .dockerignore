@@ -1,0 +1,60 @@
+# .dockerignore for .NET 10 microservice
+# Excludes unnecessary files from Docker build context
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and specs
+README.md
+LICENSE
+specs/
+*.md
+
+# Test projects (exclude from production image)
+Maliev.LeaveService.Tests/
+**/*Tests.csproj
+
+# Environment and secrets
+.env*
+*.env
+appsettings.Development.json
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Logs and temporary files
+*.log
+*.tmp
+logs/
+
+# Docker files themselves
+Dockerfile*
+.dockerignore
+docker-compose*
+
+# CI/CD
+.github/
+ci-*.yml
+
+# Miscellaneous
+node_modules/
+.nuget/
+*.cache
