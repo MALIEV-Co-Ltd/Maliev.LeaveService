@@ -94,7 +94,7 @@ public class LeaveAccrualBackgroundService : BackgroundService
                 {
                     await balanceRepository.UpdateAsync(balance, cancellationToken);
                     
-                    await publishEndpoint.Publish(new Domain.Events.Published.LeaveBalanceUpdatedEvent
+                    await publishEndpoint.Publish(new Domain.Events.Published.LeaveBalanceAdjustedEvent
                     {
                         EmployeeId = employeeId,
                         LeaveType = balance.LeaveType,

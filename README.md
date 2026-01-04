@@ -6,7 +6,7 @@
 
 Dedicated microservice for managing employee leave requests, balances, and time-off policies.
 
-**Role in MALIEV Architecture**: The authoritative system for managing employee availability. It tracks leave entitlements, processes approval workflows, and calculates balances, publishing events that influence payroll and project scheduling.
+**Role in MALIEV Architecture**: The authoritative system for managing employee availability. It handles the complete lifecycle of leave requests and balance tracking, integrating with Employee and Notification services to manage approvals and publishing events that influence payroll and project scheduling.
 
 ---
 
@@ -113,7 +113,7 @@ Standardized health probes for Kubernetes orchestration:
 
 ## 🧪 Testing
 
- we prioritize reliable tests over mock-heavy unit tests.
+We prioritize reliable tests over mock-heavy unit tests.
 
 ```bash
 # Run all tests using Testcontainers

@@ -2,7 +2,7 @@ using Maliev.LeaveService.Domain.Enums;
 
 namespace Maliev.LeaveService.Domain.Events.Published;
 
-public class LeaveBalanceUpdatedEvent
+public class LeaveBalanceAdjustedEvent
 {
     public Guid EmployeeId { get; set; }
     public LeaveType LeaveType { get; set; }
