@@ -1,81 +1,139 @@
-# Leave Service
+# Maliev Leave Service
 
-Dedicated microservice for managing employee leave requests, balances, and policies for Maliev Co. Ltd.
+[![Build Status](https://img.shields.io/badge/Build-Passing-success)](https://github.com/ORGANIZATION/Maliev.LeaveService)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%2018-blue)](https://www.postgresql.org/)
 
-## Overview
+Dedicated microservice for managing employee leave requests, balances, and time-off policies.
 
-The Leave Service manages all aspects of employee time off, including:
+**Role in MALIEV Architecture**: The authoritative system for managing employee availability. It tracks leave entitlements, processes approval workflows, and calculates balances, publishing events that influence payroll and project scheduling.
 
-- **Leave Requests** - Submission, approval, rejection, and cancellation of time-off requests.
-- **Leave Balances** - Real-time tracking of entitled, used, pending, and remaining leave days.
-- **Leave Policies** - Configuration of entitlement rules, carry-over limits, and approval requirements for different leave types.
-- **Accrual Processing** - Automated monthly accrual of leave days based on company policy.
+---
 
-## Architecture
+## 🏗️ Architecture & Tech Stack
 
-- **Framework**: ASP.NET Core 10.0
-- **Database**: PostgreSQL 18 with Entity Framework Core
-- **Messaging**: RabbitMQ via MassTransit (consumes employee lifecycle events)
-- **API Documentation**: OpenAPI with Scalar UI
+- **Framework**: ASP.NET Core 10.0 (C# 13)
+- **Database**: PostgreSQL 18 with Entity Framework Core 10.x
+- **Distributed Cache**: Redis 7.x (High-frequency balance resolution)
+- **Messaging**: RabbitMQ via MassTransit
+- **API Documentation**: OpenAPI 3.1 + Scalar UI
+- **Observability**: OpenTelemetry (Metrics, Traces, Logging)
 
-## Getting Started
+---
+
+## ⚖️ Constitution Rules
+
+This service strictly adheres to the platform development mandates:
+
+### Banned Libraries
+To maintain high performance and low complexity, the following are **NOT** used:
+- ❌ **AutoMapper**: Explicit manual mapping only.
+- ❌ **FluentValidation**: Standard Data Annotations (`[Required]`, `[EmailAddress]`) only.
+- ❌ **FluentAssertions**: Standard xUnit `Assert` methods only.
+- ❌ **In-memory Test DB**: All integration tests use **Testcontainers** with real PostgreSQL 18.
+
+### Mandatory Practices
+- ✅ **TreatWarningsAsErrors**: Enabled in all `.csproj` files.
+- ✅ **XML Documentation**: Required on all public methods and properties.
+- ✅ **No Secrets in Code**: All sensitive configuration injected via environment variables.
+- ✅ **No Test Config in Program.cs**: Test configuration in test fixtures only.
+- ✅ **IAM Integration**: Self-registers permissions with the IAM Service using GCP-style naming: `{service}.{resource}.{action}`.
+
+---
+
+## ✨ Key Features
+
+- **Dynamic Leave Requests**: Streamlined submission and tracking of various time-off types with automated approval routing.
+- **Precision Balance Tracking**: Real-time calculation of entitled, used, pending, and remaining leave days.
+- **Rule-Based Policies**: Configurable entitlement rules, carry-over limits, and accrual frequencies per department or role.
+- **Automated Accrual Engine**: Batch processing for monthly and annual leave day increments based on tenure.
+- **Organizational Visibility**: Specialized reporting for managers and HR to track team availability and utilization.
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-
 - .NET 10.0 SDK
-- PostgreSQL 18
-- Docker (optional, for Redis and RabbitMQ)
+- Docker Desktop (for infrastructure)
+- PostgreSQL 18 (Alpine)
 
-### Local Development
+### Local Development Setup
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/MALIEV-Co-Ltd/Maliev.LeaveService.git
-   ```
-
-2. **Run database migrations**
-   ```bash
-   dotnet ef database update --project Maliev.LeaveService.Infrastructure --startup-project Maliev.LeaveService.Api
-   ```
-
-3. **Run the service**
-   ```bash
-   dotnet run --project Maliev.LeaveService.Api
-   ```
-
-   The service will be available at `https://localhost:7055` or `http://localhost:5276`.
-
-## API Endpoints
-
-### Leave Requests
-
-```
-POST /leave/v1/LeaveRequests/{employeeId} - Submit a new leave request
-GET  /leave/v1/LeaveRequests/employee/{employeeId} - Get all requests for an employee
-GET  /leave/v1/LeaveRequests/pending/{managerId} - Get pending approvals for a manager
-POST /leave/v1/LeaveRequests/{requestId}/approve - Approve a request
-POST /leave/v1/LeaveRequests/{requestId}/reject - Reject a request
-PUT  /leave/v1/LeaveRequests/{requestId}/cancel - Cancel a request
+```bash
+git clone https://github.com/ORGANIZATION/Maliev.LeaveService.git
+cd Maliev.LeaveService
 ```
 
-### Leave Balances
-
-```
-GET /leave/v1/LeaveBalances/{employeeId} - Get current leave balances
-```
-
-### Leave Types & Reports
-
-```
-GET /leave/v1/LeaveTypes - List all available leave types and policies
-GET /leave/v1/Reports/utilization - Get organizational leave utilization report
+2. **Spin up Infrastructure**
+```bash
+docker run --name leave-db -e POSTGRES_PASSWORD=YOUR_PASSWORD -p 5432:5432 -d postgres:18-alpine
+docker run --name leave-redis -p 6379:6379 -d redis:7-alpine
 ```
 
-## Integration Events Consumed
+3. **Configure Environment**
+```powershell
+# Windows PowerShell
+$env:ConnectionStrings__LeaveDbContext="YOUR_POSTGRES_CONNECTION_STRING"
+$env:ConnectionStrings__Cache="YOUR_REDIS_CONNECTION_STRING"
+```
 
-- `EmployeeCreatedIntegrationEvent` - Initializes leave balances for new hires.
-- `EmployeeTerminatedIntegrationEvent` - Cancels pending leave requests for departing employees.
+4. **Apply Migrations & Run**
+```bash
+dotnet ef database update --project Maliev.LeaveService.Infrastructure --startup-project Maliev.LeaveService.Api
+dotnet run --project Maliev.LeaveService.Api
+```
 
-## License
+The service will be available at `http://localhost:5000/leave`. Access the interactive documentation at `http://localhost:5000/leave/scalar`.
 
-Copyright © 2025 Maliev Co. Ltd. All rights reserved.
+---
+
+## 📡 API Endpoints
+
+All endpoints are prefixed with `/leave/v1/`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/LeaveRequests` | Submit a new leave request |
+| GET | `/LeaveBalances/{employeeId}` | Get current leave balances |
+| POST | `/LeaveRequests/{id}/approve` | Approve a pending request |
+| GET | `/LeaveTypes` | List active policies and leave types |
+
+---
+
+## 🏥 Health & Monitoring
+
+Standardized health probes for Kubernetes orchestration:
+- **Liveness**: `GET /leave/liveness`
+- **Readiness**: `GET /leave/readiness` (Checks DB and Redis connectivity)
+- **Metrics**: `GET /leave/metrics` (Prometheus format)
+
+---
+
+## 🧪 Testing
+
+ we prioritize reliable tests over mock-heavy unit tests.
+
+```bash
+# Run all tests using Testcontainers
+dotnet test --verbosity normal
+```
+
+- **Integration Tests**: Use real PostgreSQL 18 containers.
+- **Contract Tests**: Ensure API stability for consumers.
+
+---
+
+## 📦 Deployment
+
+Infrastructure management is handled via GitOps patterns.
+
+- **Docker Image**: `REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/maliev-leave-service:{sha}`
+- **Environments**: Development, Staging, Production
+
+---
+
+## 📄 License
+
+Proprietary - © 2025 MALIEV Co., Ltd. All rights reserved.
