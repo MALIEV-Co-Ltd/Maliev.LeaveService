@@ -8,7 +8,8 @@ using Xunit;
 
 namespace Maliev.LeaveService.Tests.Contract.Api;
 
-public class LeaveApprovalsApiContractTests : IClassFixture<TestWebApplicationFactory>
+[Collection("IntegrationTests")]
+public class LeaveApprovalsApiContractTests
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;

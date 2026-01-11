@@ -5,7 +5,8 @@ using Xunit;
 
 namespace Maliev.LeaveService.Tests.Contract.Api;
 
-public class LeaveBalancesApiContractTests : IClassFixture<TestWebApplicationFactory>
+[Collection("IntegrationTests")]
+public class LeaveBalancesApiContractTests
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;

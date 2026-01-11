@@ -11,7 +11,7 @@ using Xunit;
 namespace Maliev.LeaveService.Tests.Integration;
 
 [Collection("IntegrationTests")]
-public class LeavePolicyAdminTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
+public class LeavePolicyAdminTests : IAsyncLifetime
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;

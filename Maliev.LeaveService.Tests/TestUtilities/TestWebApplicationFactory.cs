@@ -66,6 +66,15 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         Environment.SetEnvironmentVariable("ConnectionStrings__redis", _redisContainer.GetConnectionString());
         Environment.SetEnvironmentVariable("ConnectionStrings__rabbitmq", _rabbitmqContainer.GetConnectionString());
 
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Services:NotificationService:BaseUrl"] = "http://test-notification",
+                ["Services:EmployeeService:BaseUrl"] = "http://test-employee"
+            });
+        });
+
         builder.ConfigureTestServices(services =>
         {
             services.PostConfigureAll<JwtBearerOptions>(options =>
@@ -96,7 +105,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
 
         // Truncate all tables
-        var tableNames = new[] { "leave_approvals", "leave_requests", "leave_balances", "leave_policies" };
+        var tableNames = new[] { "leave_approvals", "leave_requests", "leave_balances", "leave_policies", "accrual_runs" };
         foreach (var table in tableNames)
         {
             await context.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE \"{table}\" RESTART IDENTITY CASCADE");

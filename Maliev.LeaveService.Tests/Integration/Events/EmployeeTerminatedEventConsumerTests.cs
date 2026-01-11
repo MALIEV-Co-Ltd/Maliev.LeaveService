@@ -9,7 +9,7 @@ using Xunit;
 namespace Maliev.LeaveService.Tests.Integration.Events;
 
 [Collection("IntegrationTests")]
-public class EmployeeTerminatedEventConsumerTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
+public class EmployeeTerminatedEventConsumerTests : IAsyncLifetime
 {
     private readonly TestWebApplicationFactory _factory;
 
