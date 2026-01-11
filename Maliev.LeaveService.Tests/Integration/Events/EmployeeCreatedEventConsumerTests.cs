@@ -1,4 +1,3 @@
-using Maliev.LeaveService.Domain.Events.Consumed;
 using Maliev.LeaveService.Domain.Enums;
 using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Tests.TestUtilities;
@@ -33,11 +32,11 @@ public class EmployeeCreatedEventConsumerTests : IClassFixture<TestWebApplicatio
         var employeeId = Guid.NewGuid();
         var @event = new Maliev.MessagingContracts.Generated.EmployeeCreatedEvent(
             Guid.NewGuid(),
-            "EmployeeCreatedEvent",
+            nameof(Maliev.MessagingContracts.Generated.EmployeeCreatedEvent),
             Maliev.MessagingContracts.Generated.MessageType.Event,
             "1.0",
-            "Test",
-            new List<string> { "LeaveService" },
+            "EmployeeService",
+            new[] { "LeaveService" },
             Guid.NewGuid(),
             null,
             DateTimeOffset.UtcNow,
@@ -63,7 +62,7 @@ public class EmployeeCreatedEventConsumerTests : IClassFixture<TestWebApplicatio
         await harness.Bus.Publish(@event);
         
         // Wait for consumer
-        await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>();
+        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>());
 
         // Assert
         using var verifyScope = _factory.Services.CreateScope();

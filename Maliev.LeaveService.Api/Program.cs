@@ -6,6 +6,7 @@ using Maliev.LeaveService.Domain.Authorization;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Infrastructure.Repositories;
 using Maliev.LeaveService.Infrastructure.Services;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,26 +64,35 @@ builder.Services.AddScoped<ILeaveApprovalRepository, LeaveApprovalRepository>();
 builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
 
 builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
-builder.Services.AddHttpClient<EmployeeServiceClient>(client =>
-{
-    var baseUrl = builder.Configuration.GetValue<string>("ServiceUrls:EmployeeService")
-                  ?? throw new InvalidOperationException("EmployeeService URL not configured");
-    client.BaseAddress = new Uri(baseUrl);
-});
+builder.AddServiceClient<IEmployeeServiceClient, EmployeeServiceClient>("EmployeeService");
 
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
 builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
-builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>();
+builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>("leave");
 
 var app = builder.Build();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 // --- 8. Database Migrations ---
-await app.MigrateDatabaseAsync<LeaveDbContext>();
+try
+{
+    logger.LogInformation("Starting database migrations for Leave service...");
+    await app.MigrateDatabaseAsync<LeaveDbContext>();
+    logger.LogInformation("Database migrations for Leave service completed.");
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Database migration failed for Leave service. Continuing to start app...");
+}
 
 // --- 9. Middleware Pipeline ---
 app.UseStandardMiddleware();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
@@ -90,10 +100,15 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 // --- 10. Endpoints ---
-app.MapControllers();
+logger.LogInformation("Mapping endpoints for Leave service with prefix 'leave'");
+
+// Map Aspire/Kubernetes endpoints first
 app.MapDefaultEndpoints(servicePrefix: "leave");
+
+app.MapControllers();
 app.MapApiDocumentation(servicePrefix: "leave");
 
+logger.LogInformation("Leave service starting up...");
 await app.RunAsync();
 
 public partial class Program { }

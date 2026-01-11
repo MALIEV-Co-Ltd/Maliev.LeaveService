@@ -2,7 +2,6 @@ using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
-using Maliev.LeaveService.Domain.Events.Published;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -45,15 +44,13 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
 
         var duration = (request.EndDate - request.StartDate).TotalDays + 1;
         if (duration > 30)
-        {
-            _logger.LogWarning("Leave duration {Duration} exceeds maximum of 30 days", duration);
+        {            _logger.LogWarning("Leave duration {Duration} exceeds maximum of 30 days", duration);
             return CommandResult.Failure("Leave duration cannot exceed 30 consecutive days.");
         }
 
         // 2. Advance Notice Validation (FR-003, FR-022)
         if (request.LeaveType != LeaveType.Sick)
-        {
-            if (request.StartDate < DateTimeOffset.UtcNow.AddHours(24))
+        {            if (request.StartDate < DateTimeOffset.UtcNow.AddHours(24))
             {
                 _logger.LogWarning("Insufficient notice for {LeaveType}: {StartDate}", request.LeaveType, request.StartDate);
                 return CommandResult.Failure("Non-sick leave requires at least 24 hours advance notice.");
@@ -123,16 +120,26 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
             leaveRequest.Id, leaveRequest.EmployeeId);
 
         // 9. Publish Event
-        await _publishEndpoint.Publish(new LeaveRequestSubmittedEvent
-        {
-            RequestId = leaveRequest.Id,
-            EmployeeId = leaveRequest.EmployeeId,
-            LeaveType = leaveRequest.LeaveType,
-            StartDate = leaveRequest.StartDate,
-            EndDate = leaveRequest.EndDate,
-            TotalDays = leaveRequest.TotalDays,
-            SubmittedAt = leaveRequest.CreatedAt
-        }, cancellationToken);
+        await _publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEvent(
+            Guid.NewGuid(),
+            nameof(Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEvent),
+            Maliev.MessagingContracts.Generated.MessageType.Event,
+            "1.0",
+            "LeaveService",
+            new[] { "NotificationService" },
+            Guid.NewGuid(),
+            null,
+            DateTimeOffset.UtcNow,
+            false,
+            new Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEventPayload(
+                leaveRequest.Id,
+                leaveRequest.EmployeeId,
+                leaveRequest.LeaveType.ToString(),
+                leaveRequest.StartDate,
+                leaveRequest.EndDate,
+                (double)leaveRequest.TotalDays,
+                leaveRequest.CreatedAt)
+        ), cancellationToken);
 
         return CommandResult.Success(leaveRequest.Id);
     }

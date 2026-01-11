@@ -13,6 +13,7 @@ public class LeaveDbContext : DbContext
     public DbSet<LeaveBalance> LeaveBalances => Set<LeaveBalance>();
     public DbSet<LeaveApproval> LeaveApprovals => Set<LeaveApproval>();
     public DbSet<LeavePolicy> LeavePolicies => Set<LeavePolicy>();
+    public DbSet<AccrualRun> AccrualRuns => Set<AccrualRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
