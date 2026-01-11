@@ -22,13 +22,23 @@ jobs:
 
       - name: Switch to PackageReference for CI build
         run: |
-          # Replace ProjectReference with PackageReference in all service csproj files
-          echo "Converting ProjectReferences to PackageReferences..."
+          # Determine version format based on target branch
+          BASE_BRANCH="${{ github.base_ref }}"
+          if [ "$BASE_BRANCH" == "main" ]; then
+            VERSION_FORMAT="1.0.*"
+          else
+            VERSION_FORMAT="1.0.*-*"
+          fi
+
+          echo "Target branch is $BASE_BRANCH. Using version format: $VERSION_FORMAT"
 
           # Replace ProjectReference with PackageReference in all service csproj files
-          find . -name "*.csproj" -type f -exec sed -i 's|<ProjectReference Include=".*Maliev.Aspire.ServiceDefaults.*.csproj" />|<PackageReference Include="Maliev.Aspire.ServiceDefaults" Version="1.0.*" />|Ig' {} \;
-          find . -name "*.csproj" -type f -exec sed -i 's|<ProjectReference Include=".*Maliev.MessagingContracts.*.csproj" />|<PackageReference Include="Maliev.MessagingContracts" Version="1.0.*" />|Ig' {} \;
-
+          find . -name "*.csproj" -type f -exec sed -i \
+            's|<ProjectReference Include=".*Maliev.Aspire.ServiceDefaults.*.csproj" />|<PackageReference Include="Maliev.Aspire.ServiceDefaults" Version="'$VERSION_FORMAT'" />|g' \
+            {} \;
+          find . -name "*.csproj" -type f -exec sed -i \
+            's|<ProjectReference Include=".*Maliev.MessagingContracts.*.csproj" />|<PackageReference Include="Maliev.MessagingContracts" Version="'$VERSION_FORMAT'" />|g' \
+            {} \;
 
           echo "Switched to PackageReference for ServiceDefaults and MessagingContracts"
 
