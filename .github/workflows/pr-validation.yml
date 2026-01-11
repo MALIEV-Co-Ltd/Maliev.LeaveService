@@ -6,6 +6,7 @@ on:
       - main
       - develop
       - staging
+  workflow_dispatch:
 
 jobs:
   validate:
