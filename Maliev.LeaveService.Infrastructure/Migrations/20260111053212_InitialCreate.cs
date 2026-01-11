@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Maliev.LeaveService.Infrastructure.Data.Migrations
+namespace Maliev.LeaveService.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -11,6 +11,22 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "accrual_runs",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    year = table.Column<int>(type: "integer", nullable: false),
+                    month = table.Column<int>(type: "integer", nullable: false),
+                    run_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    employees_processed = table.Column<int>(type: "integer", nullable: false),
+                    is_success = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_accrual_runs", x => x.id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "leave_balances",
                 columns: table => new
@@ -39,7 +55,7 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                     default_entitlement = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     accrual_rate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     max_carry_forward = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
-                    expiration_period_months = table.Column<int>(type: "integer", nullable: false),
+                    max_consecutive_days = table.Column<int>(type: "integer", nullable: false),
                     required_approval_levels = table.Column<int>(type: "integer", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -78,7 +94,7 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                     approver_id = table.Column<Guid>(type: "uuid", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     comments = table.Column<string>(type: "text", nullable: true),
-                    decision_timestamp = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -90,6 +106,12 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accrual_runs_year_month",
+                table: "accrual_runs",
+                columns: new[] { "year", "month" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_leave_approvals_leave_request_id",
@@ -112,6 +134,9 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "accrual_runs");
+
             migrationBuilder.DropTable(
                 name: "leave_approvals");
 

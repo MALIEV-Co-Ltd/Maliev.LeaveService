@@ -80,7 +80,7 @@ jobs:
         run: |
           cd maliev-gitops/3-apps/maliev-leave-service/overlays/production
           kustomize edit set image \
-            asia-southeast1-docker.pkg.dev/maliev-website/maliev-website-artifact/maliev-leave-service=\
+            asia-southeast1-docker.pkg.dev/maliev-website/maliev-website-artifact/maliev-leave-service=\ 
           asia-southeast1-docker.pkg.dev/maliev-website/maliev-website-artifact-prod/maliev-leave-service:${{ github.sha }}
 
       - name: Create Pull Request

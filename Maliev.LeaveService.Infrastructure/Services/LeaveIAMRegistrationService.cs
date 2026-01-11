@@ -1,5 +1,6 @@
 using Maliev.Aspire.ServiceDefaults.IAM;
 using Maliev.LeaveService.Domain.Authorization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Maliev.LeaveService.Infrastructure.Services;
@@ -12,8 +13,8 @@ public class LeaveIAMRegistrationService : IAMRegistrationService
     /// <summary>
     /// Initializes a new instance of the <see cref="LeaveIAMRegistrationService"/> class.
     /// </summary>
-    public LeaveIAMRegistrationService(IHttpClientFactory httpClientFactory, ILogger<LeaveIAMRegistrationService> logger)
-        : base(httpClientFactory, logger, "LeaveService")
+    public LeaveIAMRegistrationService(IConfiguration configuration, ILogger<LeaveIAMRegistrationService> logger)
+        : base(configuration, logger, "leave")
     {
     }
 

@@ -2,7 +2,6 @@ using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
-using Maliev.LeaveService.Domain.Events.Published;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -85,12 +84,22 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
             balance.Pending -= leaveRequest.TotalDays;
             balance.Used += leaveRequest.TotalDays;
 
-            await _publishEndpoint.Publish(new LeaveRequestApprovedEvent
-            {
-                RequestId = leaveRequest.Id,
-                EmployeeId = leaveRequest.EmployeeId,
-                ApprovedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+            await _publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveRequestApprovedEvent(
+                Guid.NewGuid(),
+                nameof(Maliev.MessagingContracts.Generated.LeaveRequestApprovedEvent),
+                Maliev.MessagingContracts.Generated.MessageType.Event,
+                "1.0",
+                "LeaveService",
+                new[] { "NotificationService" },
+                Guid.NewGuid(),
+                null,
+                DateTimeOffset.UtcNow,
+                false,
+                new Maliev.MessagingContracts.Generated.LeaveRequestApprovedEventPayload(
+                    leaveRequest.Id,
+                    leaveRequest.EmployeeId,
+                    DateTimeOffset.UtcNow)
+            ), cancellationToken);
         }
         else
         {
@@ -99,13 +108,23 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
             // Return Pending to Available
             balance.Pending -= leaveRequest.TotalDays;
 
-            await _publishEndpoint.Publish(new LeaveRequestRejectedEvent
-            {
-                RequestId = leaveRequest.Id,
-                EmployeeId = leaveRequest.EmployeeId,
-                Reason = request.Comments,
-                RejectedAt = DateTimeOffset.UtcNow
-            }, cancellationToken);
+            await _publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveRequestRejectedEvent(
+                Guid.NewGuid(),
+                nameof(Maliev.MessagingContracts.Generated.LeaveRequestRejectedEvent),
+                Maliev.MessagingContracts.Generated.MessageType.Event,
+                "1.0",
+                "LeaveService",
+                new[] { "NotificationService" },
+                Guid.NewGuid(),
+                null,
+                DateTimeOffset.UtcNow,
+                false,
+                new Maliev.MessagingContracts.Generated.LeaveRequestRejectedEventPayload(
+                    leaveRequest.Id,
+                    leaveRequest.EmployeeId,
+                    request.Comments ?? string.Empty,
+                    DateTimeOffset.UtcNow)
+            ), cancellationToken);
         }
 
         leaveRequest.UpdatedAt = DateTimeOffset.UtcNow;

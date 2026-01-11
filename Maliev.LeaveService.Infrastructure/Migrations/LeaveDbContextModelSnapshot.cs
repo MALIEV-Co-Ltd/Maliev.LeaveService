@@ -3,20 +3,17 @@ using System;
 using Maliev.LeaveService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Maliev.LeaveService.Infrastructure.Data.Migrations
+namespace Maliev.LeaveService.Infrastructure.Migrations
 {
     [DbContext(typeof(LeaveDbContext))]
-    [Migration("20251229061835_InitialLeaveCreate")]
-    partial class InitialLeaveCreate
+    partial class LeaveDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,6 +21,43 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Maliev.LeaveService.Domain.Entities.AccrualRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("EmployeesProcessed")
+                        .HasColumnType("integer")
+                        .HasColumnName("employees_processed");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_success");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer")
+                        .HasColumnName("month");
+
+                    b.Property<DateTimeOffset>("RunAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("run_at");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accrual_runs");
+
+                    b.HasIndex("Year", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accrual_runs_year_month");
+
+                    b.ToTable("accrual_runs");
+                });
 
             modelBuilder.Entity("Maliev.LeaveService.Domain.Entities.LeaveApproval", b =>
                 {
@@ -40,17 +74,13 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("comments");
 
-                    b.Property<DateTimeOffset>("DecisionTimestamp")
+                    b.Property<DateTimeOffset>("DecidedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("decision_timestamp");
+                        .HasColumnName("decided_at");
 
                     b.Property<Guid>("LeaveRequestId")
                         .HasColumnType("uuid")
                         .HasColumnName("leave_request_id");
-
-                    b.Property<int>("Level")
-                        .HasColumnType("integer")
-                        .HasColumnName("level");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -135,10 +165,6 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("default_entitlement");
 
-                    b.Property<int>("ExpirationPeriodMonths")
-                        .HasColumnType("integer")
-                        .HasColumnName("expiration_period_months");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -151,6 +177,10 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("max_carry_forward");
+
+                    b.Property<int>("MaxConsecutiveDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_consecutive_days");
 
                     b.Property<int>("RequiredApprovalLevels")
                         .HasColumnType("integer")

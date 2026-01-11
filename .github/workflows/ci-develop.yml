@@ -28,6 +28,8 @@ jobs:
             's|<ProjectReference Include=".*Maliev.MessagingContracts.*.csproj" />|<PackageReference Include="Maliev.MessagingContracts" Version="1.0.*-*" />|g' \
             {} \;
           echo "Switched to PackageReference for ServiceDefaults and MessagingContracts"
+          find . -name "Dockerfile" -type f -exec sed -i '/Maliev.Aspire.ServiceDefaults.csproj/d' {} \;
+          echo "Removed broken COPY instructions from Dockerfiles"
 
       - name: Restore dependencies
         run: dotnet restore Maliev.LeaveService.sln

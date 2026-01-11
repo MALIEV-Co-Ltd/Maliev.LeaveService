@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Maliev.LeaveService.Infrastructure.Data.Migrations
+namespace Maliev.LeaveService.Infrastructure.Migrations
 {
     [DbContext(typeof(LeaveDbContext))]
-    [Migration("20251229063211_SyncModelChanges")]
-    partial class SyncModelChanges
+    [Migration("20260111053212_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,43 @@ namespace Maliev.LeaveService.Infrastructure.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Maliev.LeaveService.Domain.Entities.AccrualRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("EmployeesProcessed")
+                        .HasColumnType("integer")
+                        .HasColumnName("employees_processed");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_success");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer")
+                        .HasColumnName("month");
+
+                    b.Property<DateTimeOffset>("RunAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("run_at");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accrual_runs");
+
+                    b.HasIndex("Year", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accrual_runs_year_month");
+
+                    b.ToTable("accrual_runs");
+                });
 
             modelBuilder.Entity("Maliev.LeaveService.Domain.Entities.LeaveApproval", b =>
                 {

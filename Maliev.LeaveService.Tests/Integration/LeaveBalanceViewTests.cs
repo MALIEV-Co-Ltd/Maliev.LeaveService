@@ -12,7 +12,7 @@ using Xunit;
 namespace Maliev.LeaveService.Tests.Integration;
 
 [Collection("IntegrationTests")]
-public class LeaveBalanceViewTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
+public class LeaveBalanceViewTests : IAsyncLifetime
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
