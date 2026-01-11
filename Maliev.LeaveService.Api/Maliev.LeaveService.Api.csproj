@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Maliev.Aspire\Maliev.Aspire.ServiceDefaults\Maliev.Aspire.ServiceDefaults.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -19,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Maliev.LeaveService.Application\Maliev.LeaveService.Application.csproj" />
     <ProjectReference Include="..\Maliev.LeaveService.Infrastructure\Maliev.LeaveService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Maliev.Aspire\Maliev.Aspire.ServiceDefaults\Maliev.Aspire.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

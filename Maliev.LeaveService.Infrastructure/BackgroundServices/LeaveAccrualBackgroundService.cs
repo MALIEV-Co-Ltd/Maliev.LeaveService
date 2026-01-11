@@ -1,6 +1,8 @@
 using Maliev.LeaveService.Application.Interfaces;
+using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Infrastructure.Services;
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -51,10 +53,22 @@ public class LeaveAccrualBackgroundService : BackgroundService
 
     private async Task ProcessAccrualsAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting monthly leave accrual process");
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Maliev.LeaveService.Infrastructure.Data.LeaveDbContext>();
+
+        var currentYear = DateTime.UtcNow.Year;
+        var currentMonth = DateTime.UtcNow.Month;
+
+        // Idempotency check: Check if accrual already ran for this month
+        if (await context.AccrualRuns.AnyAsync(r => r.Year == currentYear && r.Month == currentMonth && r.IsSuccess, cancellationToken))
+        {
+            _logger.LogInformation("Leave accrual for {Month}/{Year} already processed. Skipping.", currentMonth, currentYear);
+            return;
+        }
+
+        _logger.LogInformation("Starting monthly leave accrual process for {Month}/{Year}", currentMonth, currentYear);
         var startTime = DateTime.UtcNow;
 
-        using var scope = _serviceProvider.CreateScope();
         var balanceRepository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
         var policyRepository = scope.ServiceProvider.GetRequiredService<ILeavePolicyRepository>();
         var employeeClient = scope.ServiceProvider.GetRequiredService<EmployeeServiceClient>();
@@ -62,13 +76,12 @@ public class LeaveAccrualBackgroundService : BackgroundService
 
         var activePolicies = await policyRepository.GetAllAsync(cancellationToken);
         var activeEmployeeIds = await employeeClient.GetActiveEmployeeIdsAsync(cancellationToken);
-        var currentYear = DateTime.UtcNow.Year;
 
         int processedCount = 0;
         foreach (var employeeId in activeEmployeeIds)
         {
             var balances = await balanceRepository.GetByEmployeeIdAsync(employeeId, currentYear, cancellationToken);
-            
+
             foreach (var balance in balances)
             {
                 bool updated = false;
@@ -76,7 +89,7 @@ public class LeaveAccrualBackgroundService : BackgroundService
                 // 1. Handle Expiration (FR-019)
                 if (balance.CarriedForward > 0 && balance.ExpirationDate.HasValue && balance.ExpirationDate.Value < DateTimeOffset.UtcNow)
                 {
-                    _logger.LogInformation("Expiring {Days} carried forward days for employee {EmployeeId}, type {LeaveType}", 
+                    _logger.LogInformation("Expiring {Days} carried forward days for employee {EmployeeId}, type {LeaveType}",
                         balance.CarriedForward, employeeId, balance.LeaveType);
                     balance.CarriedForward = 0;
                     updated = true;
@@ -93,25 +106,47 @@ public class LeaveAccrualBackgroundService : BackgroundService
                 if (updated)
                 {
                     await balanceRepository.UpdateAsync(balance, cancellationToken);
-                    
-                    await publishEndpoint.Publish(new Domain.Events.Published.LeaveBalanceUpdatedEvent
-                    {
-                        EmployeeId = employeeId,
-                        LeaveType = balance.LeaveType,
-                        Year = currentYear,
-                        NewEntitled = balance.Entitled,
-                        NewUsed = balance.Used,
-                        NewPending = balance.Pending,
-                        NewCarriedForward = balance.CarriedForward
-                    }, cancellationToken);
-                    
+
+                    await publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEvent(
+                        Guid.NewGuid(),
+                        nameof(Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEvent),
+                        Maliev.MessagingContracts.Generated.MessageType.Event,
+                        "1.0",
+                        "LeaveService",
+                        new[] { "PayrollService" },
+                        Guid.NewGuid(),
+                        null,
+                        DateTimeOffset.UtcNow,
+                        false,
+                        new Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEventPayload(
+                            employeeId,
+                            balance.LeaveType.ToString(),
+                            currentYear,
+                            (double)balance.Entitled,
+                            (double)balance.Used,
+                            (double)balance.Pending,
+                            (double)balance.CarriedForward)
+                    ), cancellationToken);
+
                     processedCount++;
                 }
             }
         }
 
+        // Record successful run
+        context.AccrualRuns.Add(new AccrualRun
+        {
+            Id = Guid.NewGuid(),
+            Year = currentYear,
+            Month = currentMonth,
+            RunAt = DateTimeOffset.UtcNow,
+            EmployeesProcessed = processedCount,
+            IsSuccess = true
+        });
+        await context.SaveChangesAsync(cancellationToken);
+
         var duration = DateTime.UtcNow - startTime;
-        _logger.LogInformation("Completed leave accrual process. Processed {Count} updates in {Duration}ms", 
+        _logger.LogInformation("Completed leave accrual process. Processed {Count} updates in {Duration}ms",
             processedCount, duration.TotalMilliseconds);
     }
 }
