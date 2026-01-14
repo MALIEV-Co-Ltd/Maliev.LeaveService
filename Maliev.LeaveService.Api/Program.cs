@@ -7,101 +7,116 @@ using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Infrastructure.Repositories;
 using Maliev.LeaveService.Infrastructure.Services;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 
-var builder = WebApplication.CreateBuilder(args);
+// Initialize bootstrap logging
+using var loggerFactory = LoggerFactory.Create(logBuilder => logBuilder.AddConsole());
+var bootstrapLogger = loggerFactory.CreateLogger("Program");
 
-// --- 1. Secrets & Configuration ---
-builder.AddGoogleSecretManagerVolume();
-
-// --- 2. Infrastructure & Observability ---
-builder.AddServiceDefaults();
-builder.AddStandardMiddleware(options =>
+try
 {
-    options.EnableRequestLogging = true;
-});
-builder.AddServiceMeters("leave-service");
+    bootstrapLogger.LogInformation("Starting Leave Service host");
 
-// --- 3. Data & Cache ---
-builder.AddPostgresDbContext<LeaveDbContext>(connectionName: "LeaveDbContext");
-builder.AddRedisDistributedCache(instanceName: "leave:");
+    var builder = WebApplication.CreateBuilder(args);
 
-// --- 4. Messaging ---
-builder.AddMassTransitWithRabbitMq(x =>
-{
-    x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.EmployeeCreatedEventConsumer>();
-    x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.EmployeeTerminatedEventConsumer>();
-    x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.UndoCloseLeaveBalanceConsumer>();
-});
+    // --- 1. Secrets & Configuration ---
+    builder.AddGoogleSecretManagerVolume();
 
-// --- 5. Security ---
-builder.AddJwtAuthentication();
+    // --- 2. Infrastructure & Observability ---
+    builder.AddServiceDefaults();
+    builder.AddStandardMiddleware(options =>
+    {
+        options.EnableRequestLogging = true;
+    });
+    builder.AddServiceMeters("leave-service");
 
-// --- 6. API Configuration ---
-builder.AddDefaultCors();
-builder.AddDefaultApiVersioning();
-builder.AddStandardRateLimiting();
+    // --- 3. Data & Cache ---
+    builder.AddPostgresDbContext<LeaveDbContext>(connectionName: "LeaveDbContext");
+    builder.AddRedisDistributedCache(instanceName: "leave:");
 
-if (!builder.Environment.IsProduction())
-{
-    builder.AddStandardOpenApi(
-        title: "MALIEV Leave Service API",
-        description: "Manages employee leave requests, balances, and policies.");
+    // --- 4. Messaging ---
+    builder.AddMassTransitWithRabbitMq(x =>
+    {
+        x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.EmployeeCreatedEventConsumer>();
+        x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.EmployeeTerminatedEventConsumer>();
+        x.AddConsumer<Maliev.LeaveService.Infrastructure.Consumers.UndoCloseLeaveBalanceConsumer>();
+    });
+
+    // --- 5. Security ---
+    builder.AddJwtAuthentication();
+
+    // --- 6. API Configuration ---
+    builder.AddDefaultCors();
+    builder.AddDefaultApiVersioning();
+    builder.AddStandardRateLimiting();
+
+    if (!builder.Environment.IsProduction())
+    {
+        builder.AddStandardOpenApi(
+            title: "MALIEV Leave Service API",
+            description: "Manages employee leave requests, balances, and policies.");
+    }
+
+    builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
+    });
+
+    // --- 7. Application Services ---
+    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Maliev.LeaveService.Application.Commands.SubmitLeaveRequestCommand).Assembly));
+
+    builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
+    builder.Services.AddScoped<ILeaveBalanceRepository, LeaveBalanceRepository>();
+    builder.Services.AddScoped<ILeavePolicyRepository, LeavePolicyRepository>();
+    builder.Services.AddScoped<ILeaveApprovalRepository, LeaveApprovalRepository>();
+    builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
+
+    builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
+    builder.AddServiceClient<IEmployeeServiceClient, EmployeeServiceClient>("EmployeeService");
+
+    builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
+    builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
+    builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>("leave");
+
+    var app = builder.Build();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+    // --- 8. Database Migrations ---
+    await app.MigrateDatabaseAsync<LeaveDbContext>();
+
+    // --- 9. Middleware Pipeline ---
+    app.UseStandardMiddleware();
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+
+    app.UseRouting();
+    app.UseCors();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.UseRateLimiter();
+
+    // --- 10. Endpoints ---
+    // Map Aspire/Kubernetes endpoints first
+    app.MapDefaultEndpoints(servicePrefix: "leave");
+
+    app.MapControllers();
+    app.MapApiDocumentation(servicePrefix: "leave");
+
+    logger.LogInformation("Leave service started successfully");
+    await app.RunAsync();
 }
-
-builder.Services.AddControllers()
-.AddJsonOptions(options =>
+catch (Exception ex)
 {
-    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
-});
-
-// --- 7. Application Services ---
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Maliev.LeaveService.Application.Commands.SubmitLeaveRequestCommand).Assembly));
-
-builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
-builder.Services.AddScoped<ILeaveBalanceRepository, LeaveBalanceRepository>();
-builder.Services.AddScoped<ILeavePolicyRepository, LeavePolicyRepository>();
-builder.Services.AddScoped<ILeaveApprovalRepository, LeaveApprovalRepository>();
-builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
-
-builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
-builder.AddServiceClient<IEmployeeServiceClient, EmployeeServiceClient>("EmployeeService");
-
-builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
-builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
-builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>("leave");
-
-var app = builder.Build();
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-
-// --- 8. Database Migrations ---
-logger.LogInformation("Starting database migrations for Leave service...");
-await app.MigrateDatabaseAsync<LeaveDbContext>();
-logger.LogInformation("Database migrations for Leave service completed.");
-
-// --- 9. Middleware Pipeline ---
-app.UseStandardMiddleware();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
+    bootstrapLogger.LogCritical(ex, "Leave Service host terminated unexpectedly during startup");
+    throw;
 }
-
-app.UseRouting();
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseRateLimiter();
-
-// --- 10. Endpoints ---
-logger.LogInformation("Mapping endpoints for Leave service with prefix 'leave'");
-
-// Map Aspire/Kubernetes endpoints first
-app.MapDefaultEndpoints(servicePrefix: "leave");
-
-app.MapControllers();
-app.MapApiDocumentation(servicePrefix: "leave");
-
-logger.LogInformation("Leave service starting up...");
-await app.RunAsync();
+finally
+{
+    loggerFactory.Dispose();
+}
 
 public partial class Program { }
