@@ -1,3 +1,4 @@
+#pragma warning disable CA1848 // For improved performance, use the LoggerMessage delegates
 using Microsoft.Extensions.Hosting;
 using Maliev.Aspire.ServiceDefaults;
 using Maliev.LeaveService.Infrastructure.Data;
