@@ -44,10 +44,11 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
             new Maliev.MessagingContracts.Generated.EmployeeCreatedEventPayload(
                 employeeId,
                 "EMP001",
+                Guid.NewGuid(), // PrincipalId
                 DateTimeOffset.UtcNow,
-                Guid.NewGuid(),
-                null,
-                null)
+                Guid.NewGuid(), // DepartmentId
+                null,           // PositionId
+                null)           // ManagerId
         );
 
         using var scope = _factory.Services.CreateScope();
