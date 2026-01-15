@@ -15,7 +15,7 @@ public class EmployeeServiceClient : IEmployeeServiceClient
     public async Task<IEnumerable<Guid>> GetActiveEmployeeIdsAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetFromJsonAsync<EmployeeSearchResultDto>(
-            "employee/v1/reports/employees/search?EmploymentStatus=Active&PageSize=1000", 
+            "employee/v1/reports/employees/search?EmploymentStatus=Active&PageSize=1000",
             cancellationToken);
 
         return response?.Results.Select(r => r.Id) ?? Enumerable.Empty<Guid>();

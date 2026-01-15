@@ -21,7 +21,7 @@ public class GetLeaveUtilizationReportQueryHandler : IRequestHandler<GetLeaveUti
     {
         // This is a simplified implementation for the decomposition task.
         // In a real system, this would perform a more complex aggregation.
-        
+
         var report = new LeaveUtilizationReportDto
         {
             Year = request.Year,

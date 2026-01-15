@@ -35,7 +35,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
 
     public async Task<CommandResult> Handle(ApproveRejectLeaveCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Processing decision {Decision} for request {RequestId} by approver {ApproverId}", 
+        _logger.LogInformation("Processing decision {Decision} for request {RequestId} by approver {ApproverId}",
             request.Decision, request.RequestId, request.ApproverId);
 
         var leaveRequest = await _requestRepository.GetByIdAsync(request.RequestId, cancellationToken);
@@ -47,7 +47,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
 
         if (leaveRequest.Status != LeaveRequestStatus.Pending)
         {
-            _logger.LogWarning("Cannot process decision for request {RequestId} with status {Status}", 
+            _logger.LogWarning("Cannot process decision for request {RequestId} with status {Status}",
                 request.RequestId, leaveRequest.Status);
             return CommandResult.Failure($"Cannot process a request with status {leaveRequest.Status}.");
         }
@@ -60,7 +60,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
 
         if (balance == null)
         {
-            _logger.LogWarning("Leave balance not found for employee {EmployeeId}, year {Year}", 
+            _logger.LogWarning("Leave balance not found for employee {EmployeeId}, year {Year}",
                 leaveRequest.EmployeeId, leaveRequest.StartDate.Year);
             return CommandResult.Failure("Leave balance not found.");
         }
@@ -79,7 +79,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
         if (request.Decision == ApprovalStatus.Approved)
         {
             leaveRequest.Status = LeaveRequestStatus.Approved;
-            
+
             // Move Pending to Used
             balance.Pending -= leaveRequest.TotalDays;
             balance.Used += leaveRequest.TotalDays;
@@ -104,7 +104,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
         else
         {
             leaveRequest.Status = LeaveRequestStatus.Rejected;
-            
+
             // Return Pending to Available
             balance.Pending -= leaveRequest.TotalDays;
 
@@ -133,7 +133,7 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
         await _balanceRepository.UpdateAsync(balance, cancellationToken);
         await _approvalRepository.AddAsync(approval, cancellationToken);
 
-        _logger.LogInformation("Decision {Decision} recorded for request {RequestId} (Audit: FR-027 compliant)", 
+        _logger.LogInformation("Decision {Decision} recorded for request {RequestId} (Audit: FR-027 compliant)",
             request.Decision, leaveRequest.Id);
 
         // Notify Employee

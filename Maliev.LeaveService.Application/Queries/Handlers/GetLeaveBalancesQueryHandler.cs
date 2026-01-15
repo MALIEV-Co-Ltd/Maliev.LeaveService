@@ -19,7 +19,7 @@ public class GetLeaveBalancesQueryHandler : IRequestHandler<GetLeaveBalancesQuer
 
     public async Task<IEnumerable<LeaveBalanceDto>> Handle(GetLeaveBalancesQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Retrieving leave balances for employee {EmployeeId}, year {Year}", 
+        _logger.LogInformation("Retrieving leave balances for employee {EmployeeId}, year {Year}",
             request.EmployeeId, request.Year);
 
         var year = request.Year ?? DateTimeOffset.UtcNow.Year;

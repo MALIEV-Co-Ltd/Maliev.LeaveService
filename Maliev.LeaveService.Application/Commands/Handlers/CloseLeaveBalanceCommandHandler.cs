@@ -28,11 +28,11 @@ public class CloseLeaveBalanceCommandHandler : IRequestHandler<CloseLeaveBalance
 
     public async Task<bool> Handle(CloseLeaveBalanceCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Closing leave balances for employee {EmployeeId} (Correlation: {CorrelationId})", 
+        _logger.LogInformation("Closing leave balances for employee {EmployeeId} (Correlation: {CorrelationId})",
             request.EmployeeId, request.CorrelationId);
 
         var balances = await _balanceRepository.GetByEmployeeIdAsync(request.EmployeeId, DateTime.UtcNow.Year, cancellationToken);
-        
+
         foreach (var balance in balances)
         {
             // Logic to mark balance as closed/inactive if applicable

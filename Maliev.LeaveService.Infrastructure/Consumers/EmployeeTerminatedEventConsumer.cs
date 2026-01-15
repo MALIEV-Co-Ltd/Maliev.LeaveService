@@ -43,8 +43,8 @@ public class EmployeeTerminatedEventConsumer : IConsumer<EmployeeTerminatedEvent
             request.UpdatedAt = DateTimeOffset.UtcNow;
 
             var balance = await _balanceRepository.GetByEmployeeAndTypeAsync(
-                request.EmployeeId, 
-                request.LeaveType, 
+                request.EmployeeId,
+                request.LeaveType,
                 request.StartDate.Year);
 
             if (balance != null)

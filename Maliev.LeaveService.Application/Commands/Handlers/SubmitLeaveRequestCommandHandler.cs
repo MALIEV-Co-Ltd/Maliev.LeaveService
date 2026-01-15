@@ -32,7 +32,7 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
 
     public async Task<CommandResult> Handle(SubmitLeaveRequestCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Processing leave request submission for employee {EmployeeId}, type {LeaveType}", 
+        _logger.LogInformation("Processing leave request submission for employee {EmployeeId}, type {LeaveType}",
             request.EmployeeId, request.LeaveType);
 
         // 1. Basic Date Validation
@@ -44,13 +44,15 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
 
         var duration = (request.EndDate - request.StartDate).TotalDays + 1;
         if (duration > 30)
-        {            _logger.LogWarning("Leave duration {Duration} exceeds maximum of 30 days", duration);
+        {
+            _logger.LogWarning("Leave duration {Duration} exceeds maximum of 30 days", duration);
             return CommandResult.Failure("Leave duration cannot exceed 30 consecutive days.");
         }
 
         // 2. Advance Notice Validation (FR-003, FR-022)
         if (request.LeaveType != LeaveType.Sick)
-        {            if (request.StartDate < DateTimeOffset.UtcNow.AddHours(24))
+        {
+            if (request.StartDate < DateTimeOffset.UtcNow.AddHours(24))
             {
                 _logger.LogWarning("Insufficient notice for {LeaveType}: {StartDate}", request.LeaveType, request.StartDate);
                 return CommandResult.Failure("Non-sick leave requires at least 24 hours advance notice.");
@@ -61,7 +63,7 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
         var hasOverlap = await _requestRepository.HasOverlapAsync(request.EmployeeId, request.StartDate, request.EndDate, cancellationToken);
         if (hasOverlap)
         {
-            _logger.LogWarning("Overlapping leave request detected for employee {EmployeeId} between {StartDate} and {EndDate}", 
+            _logger.LogWarning("Overlapping leave request detected for employee {EmployeeId} between {StartDate} and {EndDate}",
                 request.EmployeeId, request.StartDate, request.EndDate);
             return CommandResult.Failure("Selected dates overlap with an existing leave request.");
         }
@@ -69,10 +71,10 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
         // 4. Balance Validation (FR-004)
         var year = request.StartDate.Year;
         var balance = await _balanceRepository.GetByEmployeeAndTypeAsync(request.EmployeeId, request.LeaveType, year, cancellationToken);
-        
+
         if (balance == null)
         {
-            _logger.LogWarning("No leave balance found for employee {EmployeeId}, type {LeaveType}, year {Year}", 
+            _logger.LogWarning("No leave balance found for employee {EmployeeId}, type {LeaveType}, year {Year}",
                 request.EmployeeId, request.LeaveType, year);
             return CommandResult.Failure($"No leave balance found for {request.LeaveType} in {year}.");
         }
@@ -81,7 +83,7 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
 
         if (balance.Available < requestedDays)
         {
-            _logger.LogWarning("Insufficient balance for employee {EmployeeId}: Required {Requested}, Available {Available}", 
+            _logger.LogWarning("Insufficient balance for employee {EmployeeId}: Required {Requested}, Available {Available}",
                 request.EmployeeId, requestedDays, balance.Available);
             return CommandResult.Failure("Insufficient balance for this leave request.");
         }
@@ -116,7 +118,7 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
         await _requestRepository.AddAsync(leaveRequest, cancellationToken);
         await _balanceRepository.UpdateAsync(balance, cancellationToken);
 
-        _logger.LogInformation("Leave request {RequestId} created for employee {EmployeeId} (Audit: FR-027 compliant)", 
+        _logger.LogInformation("Leave request {RequestId} created for employee {EmployeeId} (Audit: FR-027 compliant)",
             leaveRequest.Id, leaveRequest.EmployeeId);
 
         // 9. Publish Event

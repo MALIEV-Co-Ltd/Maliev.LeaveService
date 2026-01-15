@@ -40,8 +40,8 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
         foreach (var policy in activePolicies.Where(p => p.IsActive))
         {
             var existingBalance = await _balanceRepository.GetByEmployeeAndTypeAsync(
-                payload.EmployeeId, 
-                policy.LeaveType, 
+                payload.EmployeeId,
+                policy.LeaveType,
                 currentYear);
 
             if (existingBalance == null)
@@ -59,7 +59,7 @@ public class EmployeeCreatedEventConsumer : IConsumer<EmployeeCreatedEvent>
                 };
 
                 await _balanceRepository.AddAsync(newBalance);
-                _logger.LogInformation("Initialized {LeaveType} balance for employee {EmployeeId}", 
+                _logger.LogInformation("Initialized {LeaveType} balance for employee {EmployeeId}",
                     policy.LeaveType, payload.EmployeeId);
             }
         }

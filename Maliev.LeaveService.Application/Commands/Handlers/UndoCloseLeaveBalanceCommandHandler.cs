@@ -23,10 +23,10 @@ public class UndoCloseLeaveBalanceCommandHandler
     public async Task HandleAsync(UndoCloseLeaveBalanceCommand command, CancellationToken cancellationToken = default)
     {
         _logger.LogWarning("UNDO: Restoring leave balances for employee {EmployeeId}", command.EmployeeId);
-        
+
         // In a real scenario, we might re-activate records or reverse status changes
         // For this refactoring, we log the compensation action
-        
+
         await Task.CompletedTask;
     }
 }

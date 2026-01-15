@@ -10,7 +10,7 @@ public class LeaveRequestConfiguration : IEntityTypeConfiguration<LeaveRequest>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.TotalDays).HasPrecision(5, 2);
-        
+
         builder.HasMany(e => e.Approvals)
                .WithOne(e => e.LeaveRequest)
                .HasForeignKey(e => e.LeaveRequestId)

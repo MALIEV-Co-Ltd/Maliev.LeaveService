@@ -39,9 +39,9 @@ public class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveLeaveReq
         }
 
         var balance = await _balanceRepository.GetByEmployeeAndTypeAsync(
-            leaveRequest.EmployeeId, 
-            leaveRequest.LeaveType, 
-            leaveRequest.StartDate.Year, 
+            leaveRequest.EmployeeId,
+            leaveRequest.LeaveType,
+            leaveRequest.StartDate.Year,
             cancellationToken);
 
         if (balance == null)

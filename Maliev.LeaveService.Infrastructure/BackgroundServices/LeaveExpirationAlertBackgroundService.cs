@@ -48,16 +48,16 @@ public class LeaveExpirationAlertBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var balanceRepository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-        
+
         // Find balances expiring exactly 30 days from now
         var targetDate = DateTimeOffset.UtcNow.AddDays(30);
         var expiringBalances = await balanceRepository.GetExpiringBalancesAsync(targetDate, cancellationToken);
 
         foreach (var balance in expiringBalances)
         {
-            _logger.LogInformation("Sending expiration alert for employee {EmployeeId}, leave type {LeaveType}", 
+            _logger.LogInformation("Sending expiration alert for employee {EmployeeId}, leave type {LeaveType}",
                 balance.EmployeeId, balance.LeaveType);
-            
+
             await notificationService.NotifyExpirationAlertAsync(balance.EmployeeId, 30);
         }
     }

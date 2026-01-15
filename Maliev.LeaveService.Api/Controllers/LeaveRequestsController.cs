@@ -46,8 +46,8 @@ public class LeaveRequestsController : ControllerBase
     [HttpGet("employee/{employeeId:guid}")]
     public async Task<IActionResult> GetByEmployee(Guid employeeId, [FromQuery] int? year)
     {
-        var query = new GetLeaveRequestsQuery 
-        { 
+        var query = new GetLeaveRequestsQuery
+        {
             EmployeeId = employeeId,
             Year = year
         };

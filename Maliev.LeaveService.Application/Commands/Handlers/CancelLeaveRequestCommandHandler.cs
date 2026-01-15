@@ -31,7 +31,7 @@ public class CancelLeaveRequestCommandHandler : IRequestHandler<CancelLeaveReque
 
     public async Task<CommandResult> Handle(CancelLeaveRequestCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Processing cancellation for request {RequestId} by user {RequestedBy}", 
+        _logger.LogInformation("Processing cancellation for request {RequestId} by user {RequestedBy}",
             request.RequestId, request.RequestedBy);
 
         var leaveRequest = await _requestRepository.GetByIdAsync(request.RequestId, cancellationToken);
@@ -43,7 +43,7 @@ public class CancelLeaveRequestCommandHandler : IRequestHandler<CancelLeaveReque
 
         if (leaveRequest.Status == LeaveRequestStatus.Cancelled || leaveRequest.Status == LeaveRequestStatus.Rejected)
         {
-            _logger.LogWarning("Cannot cancel request {RequestId} with status {Status}", 
+            _logger.LogWarning("Cannot cancel request {RequestId} with status {Status}",
                 request.RequestId, leaveRequest.Status);
             return CommandResult.Failure($"Cannot cancel a request with status {leaveRequest.Status}.");
         }
@@ -56,7 +56,7 @@ public class CancelLeaveRequestCommandHandler : IRequestHandler<CancelLeaveReque
 
         if (balance == null)
         {
-            _logger.LogWarning("Leave balance not found for employee {EmployeeId}, year {Year}", 
+            _logger.LogWarning("Leave balance not found for employee {EmployeeId}, year {Year}",
                 leaveRequest.EmployeeId, leaveRequest.StartDate.Year);
             return CommandResult.Failure("Leave balance not found.");
         }

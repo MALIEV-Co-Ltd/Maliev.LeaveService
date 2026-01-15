@@ -19,7 +19,7 @@ public class GetLeaveRequestsQueryHandler : IRequestHandler<GetLeaveRequestsQuer
 
     public async Task<IEnumerable<LeaveRequestDto>> Handle(GetLeaveRequestsQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Retrieving leave requests for employee {EmployeeId}, year {Year}", 
+        _logger.LogInformation("Retrieving leave requests for employee {EmployeeId}, year {Year}",
             request.EmployeeId, request.Year);
 
         var requests = await _requestRepository.GetByEmployeeIdAsync(request.EmployeeId, request.Year, cancellationToken);
