@@ -1,6 +1,5 @@
 using Maliev.LeaveService.Application.DTOs.Responses;
 using Maliev.LeaveService.Application.Interfaces;
-using Maliev.LeaveService.Application.Queries;
 using Maliev.LeaveService.Domain.Enums;
 using MediatR;
 

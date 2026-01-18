@@ -1,4 +1,3 @@
-using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using MediatR;
@@ -16,7 +15,13 @@ public class CreateLeavePolicyCommandHandler : IRequestHandler<CreateLeavePolicy
 
     public async Task<CommandResult> Handle(CreateLeavePolicyCommand request, CancellationToken cancellationToken)
     {
+        if (request.DefaultEntitlement < 0)
+        {
+            return CommandResult.Failure("Default entitlement cannot be negative.");
+        }
+
         var existing = await _policyRepository.GetByTypeAsync(request.LeaveType, cancellationToken);
+
         if (existing != null)
         {
             return CommandResult.Failure($"Policy for {request.LeaveType} already exists.");
