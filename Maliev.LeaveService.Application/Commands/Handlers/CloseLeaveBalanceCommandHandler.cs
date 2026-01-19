@@ -1,6 +1,5 @@
 using Maliev.LeaveService.Application.Interfaces;
-using Maliev.LeaveService.Application.Commands;
-using Maliev.LeaveService.Domain.IntegrationEvents;
+using Maliev.MessagingContracts.Generated;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -39,7 +38,24 @@ public class CloseLeaveBalanceCommandHandler : IRequestHandler<CloseLeaveBalance
             // For now, we'll just log and proceed
         }
 
-        await _publishEndpoint.Publish(new LeaveBalanceClosedEvent(request.EmployeeId, request.CorrelationId), cancellationToken);
+        var leaveBalanceClosedEvent = new LeaveBalanceClosedEvent(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(LeaveBalanceClosedEvent),
+            MessageType: MessageType.Event,
+            MessageVersion: "1.0.0",
+            PublishedBy: "LeaveService",
+            ConsumedBy: Array.Empty<string>(),
+            CorrelationId: request.CorrelationId,
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new LeaveBalanceClosedEventPayload(
+                EmployeeId: request.EmployeeId,
+                ClosedAt: DateTimeOffset.UtcNow
+            )
+        );
+
+        await _publishEndpoint.Publish(leaveBalanceClosedEvent, cancellationToken);
 
         return true;
     }

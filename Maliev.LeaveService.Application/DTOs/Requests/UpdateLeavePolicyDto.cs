@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace Maliev.LeaveService.Application.DTOs.Requests;
 
 public class UpdateLeavePolicyDto

@@ -1,13 +1,8 @@
-using Microsoft.Extensions.Hosting;
-using Maliev.Aspire.ServiceDefaults;
-using Maliev.LeaveService.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Maliev.LeaveService.Domain.Authorization;
 using Maliev.LeaveService.Application.Interfaces;
+using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Infrastructure.Repositories;
 using Maliev.LeaveService.Infrastructure.Services;
-using MassTransit;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 // Initialize bootstrap logging
 using var loggerFactory = LoggerFactory.Create(logBuilder => logBuilder.AddConsole());

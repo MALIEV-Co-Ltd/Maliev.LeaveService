@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using Maliev.LeaveService.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Maliev.LeaveService.Application.DTOs.Requests;
 

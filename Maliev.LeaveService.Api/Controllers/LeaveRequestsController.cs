@@ -1,7 +1,6 @@
 using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.DTOs.Requests;
 using Maliev.LeaveService.Application.Queries;
-using Maliev.LeaveService.Domain.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
