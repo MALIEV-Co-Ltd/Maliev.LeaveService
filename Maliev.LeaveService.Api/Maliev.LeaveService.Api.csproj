@@ -5,12 +5,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SharedLibraryVersion Condition="'$(SharedLibraryVersion)' == ''">1.0.*-*</SharedLibraryVersion>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
     <ProjectReference Include="..\Maliev.LeaveService.Application\Maliev.LeaveService.Application.csproj" />
     <ProjectReference Include="..\Maliev.LeaveService.Infrastructure\Maliev.LeaveService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Maliev.Aspire\Maliev.Aspire.ServiceDefaults\Maliev.Aspire.ServiceDefaults.csproj" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ProjectReference Include="..\Maliev.LeaveService.Application\Maliev.LeaveService.Application.csproj" />
+    <ProjectReference Include="..\Maliev.LeaveService.Infrastructure\Maliev.LeaveService.Infrastructure.csproj" />
+    <PackageReference Include="Maliev.Aspire.ServiceDefaults" Version="$(SharedLibraryVersion)" />
+  </ItemGroup>
+
 
 </Project>

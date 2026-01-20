@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Maliev.LeaveService.Api/Maliev.LeaveService.Api.csproj" />
+  <Project Path="Maliev.LeaveService.Application/Maliev.LeaveService.Application.csproj" />
+  <Project Path="Maliev.LeaveService.Domain/Maliev.LeaveService.Domain.csproj" />
+  <Project Path="Maliev.LeaveService.Infrastructure/Maliev.LeaveService.Infrastructure.csproj" />
+  <Project Path="Maliev.LeaveService.Tests/Maliev.LeaveService.Tests.csproj" />
+</Solution>
