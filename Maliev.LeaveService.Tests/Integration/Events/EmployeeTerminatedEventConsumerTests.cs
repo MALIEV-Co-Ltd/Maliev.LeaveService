@@ -58,6 +58,7 @@ public class EmployeeTerminatedEventConsumerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         // Act
+        await harness.Start();
         await harness.Bus.Publish(@event);
         
         // Wait for consumer

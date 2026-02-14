@@ -45,6 +45,8 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
                 employeeId,
                 "EMP001",
                 Guid.NewGuid(), // PrincipalId
+                "test@example.com", // Email
+                "Test Employee",    // FullName
                 DateTimeOffset.UtcNow,
                 Guid.NewGuid(), // DepartmentId
                 null,           // PositionId
@@ -60,6 +62,7 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
         await seeder.SeedAsync();
 
         // Act
+        await harness.Start();
         await harness.Bus.Publish(@event);
         
         // Wait for consumer
