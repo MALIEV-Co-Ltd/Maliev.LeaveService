@@ -1,8 +1,10 @@
+using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
 using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Tests.TestUtilities;
 using MassTransit;
 using MassTransit.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -62,16 +64,24 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
         await seeder.SeedAsync();
 
         // Act
-        await harness.Start();
         await harness.Bus.Publish(@event);
         
-        // Wait for consumer
-        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>());
+        // Wait for consumer with generous timeout
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
 
-        // Assert
+        // Assert - wait a bit for DB update to commit
         using var verifyScope = _factory.Services.CreateScope();
         var verifyContext = verifyScope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        var balances = verifyContext.LeaveBalances.Where(b => b.EmployeeId == employeeId).ToList();
+        
+        List<LeaveBalance> balances = new();
+        // Retry a few times if not yet populated
+        for (int i = 0; i < 10 && !balances.Any(); i++)
+        {
+            await Task.Delay(500);
+            balances = await verifyContext.LeaveBalances.Where(b => b.EmployeeId == employeeId).ToListAsync();
+        }
+        
         Assert.NotEmpty(balances);
         Assert.Contains(balances, b => b.LeaveType == LeaveType.Annual);
     }

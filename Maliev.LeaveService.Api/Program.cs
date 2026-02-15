@@ -27,7 +27,7 @@ try
 
     // --- 3. Data & Cache ---
     builder.AddPostgresDbContext<LeaveDbContext>(connectionName: "LeaveDbContext");
-    builder.AddRedisDistributedCache(instanceName: "leave:");
+    builder.AddStandardCache("leave:"); // Redis + in-memory fallback, memory-optimized
 
     // --- 4. Messaging ---
     builder.AddMassTransitWithRabbitMq(x =>
@@ -41,7 +41,7 @@ try
     builder.AddJwtAuthentication();
 
     // --- 6. API Configuration ---
-    builder.AddDefaultCors();
+    builder.AddStandardCors(); // CORS with fail-fast validation
     builder.AddDefaultApiVersioning();
     builder.AddStandardRateLimiting();
 
@@ -68,7 +68,7 @@ try
     builder.Services.AddScoped<Maliev.LeaveService.Application.Commands.Handlers.UndoCloseLeaveBalanceCommandHandler>();
 
     builder.AddServiceClient<INotificationService, NotificationService>("NotificationService");
-    builder.AddServiceClient<IEmployeeServiceClient, EmployeeServiceClient>("EmployeeService");
+    builder.AddAuthenticatedServiceClient<IEmployeeServiceClient, EmployeeServiceClient>("EmployeeService", sourceServiceName: "leave");
 
     builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
     builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();

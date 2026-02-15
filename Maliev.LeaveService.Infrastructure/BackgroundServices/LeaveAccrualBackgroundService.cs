@@ -71,7 +71,7 @@ public class LeaveAccrualBackgroundService : BackgroundService
 
         var balanceRepository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
         var policyRepository = scope.ServiceProvider.GetRequiredService<ILeavePolicyRepository>();
-        var employeeClient = scope.ServiceProvider.GetRequiredService<EmployeeServiceClient>();
+        var employeeClient = scope.ServiceProvider.GetRequiredService<IEmployeeServiceClient>();
         var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
         var activePolicies = await policyRepository.GetAllAsync(cancellationToken);

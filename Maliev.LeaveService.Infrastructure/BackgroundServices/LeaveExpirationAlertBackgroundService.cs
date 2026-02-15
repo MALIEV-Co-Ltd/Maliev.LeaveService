@@ -24,10 +24,46 @@ public class LeaveExpirationAlertBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("LeaveExpirationAlertBackgroundService starting");
+        _logger.LogInformation("LeaveExpirationAlertBackgroundService starting - waiting 15 seconds for infrastructure");
 
+        // Initial delay to allow infrastructure (database, services) to warm up
+        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+
+        // First execution with retry logic
+        var maxRetries = 3;
+        var retryDelay = TimeSpan.FromSeconds(5);
+
+        for (int attempt = 1; attempt <= maxRetries && !stoppingToken.IsCancellationRequested; attempt++)
+        {
+            try
+            {
+                _logger.LogInformation("Initial expiration alert check attempt {Attempt}/{MaxRetries}", attempt, maxRetries);
+                await SendExpirationAlertsAsync(stoppingToken);
+                _logger.LogInformation("Initial expiration alert check completed successfully");
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Initial expiration alert check attempt {Attempt}/{MaxRetries} failed", attempt, maxRetries);
+
+                if (attempt < maxRetries)
+                {
+                    _logger.LogInformation("Retrying in {RetryDelay} seconds", retryDelay.TotalSeconds);
+                    await Task.Delay(retryDelay, stoppingToken);
+                    retryDelay = TimeSpan.FromSeconds(retryDelay.TotalSeconds * 2); // Exponential backoff
+                }
+                else
+                {
+                    _logger.LogError(ex, "Initial expiration alert check failed after {MaxRetries} attempts", maxRetries);
+                }
+            }
+        }
+
+        // Continue with regular scheduled checks
         while (!stoppingToken.IsCancellationRequested)
         {
+            await Task.Delay(_checkInterval, stoppingToken);
+
             try
             {
                 await SendExpirationAlertsAsync(stoppingToken);
@@ -36,8 +72,6 @@ public class LeaveExpirationAlertBackgroundService : BackgroundService
             {
                 _logger.LogError(ex, "Error occurred while sending leave expiration alerts");
             }
-
-            await Task.Delay(_checkInterval, stoppingToken);
         }
 
         _logger.LogInformation("LeaveExpirationAlertBackgroundService stopping");

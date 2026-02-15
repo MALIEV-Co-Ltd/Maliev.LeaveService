@@ -58,16 +58,24 @@ public class EmployeeTerminatedEventConsumerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         // Act
-        await harness.Start();
         await harness.Bus.Publish(@event);
         
-        // Wait for consumer
-        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent>());
+        // Wait for consumer with generous timeout
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
 
-        // Assert
+        // Assert - wait a bit for DB update to commit if needed
         using var verifyScope = _factory.Services.CreateScope();
         var verifyContext = verifyScope.ServiceProvider.GetRequiredService<LeaveDbContext>();
+        
         var updatedRequest = await verifyContext.LeaveRequests.FindAsync(request.Id);
+        // Retry a few times if not yet updated
+        for (int i = 0; i < 5 && updatedRequest?.Status != LeaveRequestStatus.Cancelled; i++)
+        {
+            await Task.Delay(500);
+            updatedRequest = await verifyContext.LeaveRequests.FindAsync(request.Id);
+        }
+        
         Assert.Equal(LeaveRequestStatus.Cancelled, updatedRequest?.Status);
     }
 }

@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using Moq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -26,6 +28,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
     private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine").Build();
     private readonly RabbitMqContainer _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine").Build();
     private readonly RSA _testRsa = RSA.Create(2048);
+
+    public TestWebApplicationFactory()
+    {
+        // Set environment variables EARLY so Program.cs picks them up
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        Environment.SetEnvironmentVariable("CORS__AllowedOrigins__0", "http://localhost:3000");
+        Environment.SetEnvironmentVariable("CORS_ALLOWED_ORIGINS", "http://localhost:3000");
+    }
 
     public string CreateTestToken(string userId = "test-user", string[]? roles = null)
     {
@@ -60,6 +70,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("CORS:AllowedOrigins:0", "http://localhost:3000");
+        builder.UseSetting("Features:FailOpenOnIAMError", "true");
+
+        // Export RSA public key for JWT validation in PEM format
+        var publicKeyPem = _testRsa.ExportRSAPublicKeyPem();
+        var publicKeyBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(publicKeyPem));
+        Environment.SetEnvironmentVariable("Jwt__PublicKey", publicKeyBase64);
+        Environment.SetEnvironmentVariable("Jwt:PublicKey", publicKeyBase64);
 
         // Set environment variables for connection strings (read early in configuration pipeline)
         Environment.SetEnvironmentVariable("ConnectionStrings__LeaveDbContext", _postgresContainer.GetConnectionString());
@@ -71,7 +89,10 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Services:NotificationService:BaseUrl"] = "http://test-notification",
-                ["Services:EmployeeService:BaseUrl"] = "http://test-employee"
+                ["Services:EmployeeService:BaseUrl"] = "http://test-employee",
+                ["IAM:RegistrationDelaySeconds"] = "0",
+                ["RateLimiting:PermitLimit"] = "10000",
+                ["RateLimiting:WindowMinutes"] = "1"
             });
         });
 
@@ -89,6 +110,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new RsaSecurityKey(_testRsa)
                 };
+            });
+
+            // Mock IAM service client
+            services.AddScoped<Maliev.Aspire.ServiceDefaults.IAM.IIamServiceClient>(sp => {
+                var mockIam = new Moq.Mock<Maliev.Aspire.ServiceDefaults.IAM.IIamServiceClient>();
+                mockIam.Setup(x => x.CheckPermissionAsync(Moq.It.IsAny<string>(), Moq.It.IsAny<string>(), Moq.It.IsAny<string?>(), Moq.It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(false);
+                return mockIam.Object;
             });
 
             services.AddMassTransitTestHarness();
