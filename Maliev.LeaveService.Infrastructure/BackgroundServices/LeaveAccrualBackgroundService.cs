@@ -1,6 +1,8 @@
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Infrastructure.Services;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,25 +109,25 @@ public class LeaveAccrualBackgroundService : BackgroundService
                 {
                     await balanceRepository.UpdateAsync(balance, cancellationToken);
 
-                    await publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEvent(
-                        Guid.NewGuid(),
-                        nameof(Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEvent),
-                        Maliev.MessagingContracts.Generated.MessageType.Event,
-                        "1.0",
-                        "LeaveService",
-                        new[] { "PayrollService" },
-                        Guid.NewGuid(),
-                        null,
-                        DateTimeOffset.UtcNow,
-                        false,
-                        new Maliev.MessagingContracts.Generated.LeaveBalanceAdjustedEventPayload(
-                            employeeId,
-                            balance.LeaveType.ToString(),
-                            currentYear,
-                            (double)balance.Entitled,
-                            (double)balance.Used,
-                            (double)balance.Pending,
-                            (double)balance.CarriedForward)
+                    await publishEndpoint.Publish(new LeaveBalanceAdjustedEvent(
+                        MessageId: Guid.NewGuid(),
+                        MessageName: nameof(LeaveBalanceAdjustedEvent),
+                        MessageType: MessageType.Event,
+                        MessageVersion: "1.0",
+                        PublishedBy: "LeaveService",
+                        ConsumedBy: new List<string> { "PayrollService" },
+                        CorrelationId: Guid.NewGuid(),
+                        CausationId: null,
+                        OccurredAtUtc: DateTimeOffset.UtcNow,
+                        IsPublic: false,
+                        Payload: new LeaveBalanceAdjustedEventPayload(
+                            EmployeeId: employeeId,
+                            LeaveType: balance.LeaveType.ToString(),
+                            Year: currentYear,
+                            NewEntitled: (double)balance.Entitled,
+                            NewUsed: (double)balance.Used,
+                            NewPending: (double)balance.Pending,
+                            NewCarriedForward: (double)balance.CarriedForward)
                     ), cancellationToken);
 
                     processedCount++;

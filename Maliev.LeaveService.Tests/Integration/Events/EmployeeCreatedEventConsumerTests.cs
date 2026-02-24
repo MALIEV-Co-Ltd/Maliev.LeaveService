@@ -2,6 +2,8 @@ using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
 using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Tests.TestUtilities;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Employee;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -32,27 +34,27 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
     {
         // Arrange
         var employeeId = Guid.NewGuid();
-        var @event = new Maliev.MessagingContracts.Generated.EmployeeCreatedEvent(
-            Guid.NewGuid(),
-            nameof(Maliev.MessagingContracts.Generated.EmployeeCreatedEvent),
-            Maliev.MessagingContracts.Generated.MessageType.Event,
-            "1.0",
-            "EmployeeService",
-            new[] { "LeaveService" },
-            Guid.NewGuid(),
-            null,
-            DateTimeOffset.UtcNow,
-            false,
-            new Maliev.MessagingContracts.Generated.EmployeeCreatedEventPayload(
-                employeeId,
-                "EMP001",
-                Guid.NewGuid(), // PrincipalId
-                "test@example.com", // Email
-                "Test Employee",    // FullName
-                DateTimeOffset.UtcNow,
-                Guid.NewGuid(), // DepartmentId
-                null,           // PositionId
-                null)           // ManagerId
+        var @event = new EmployeeCreatedEvent(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(EmployeeCreatedEvent),
+            MessageType: MessageType.Event,
+            MessageVersion: "1.0",
+            PublishedBy: "EmployeeService",
+            ConsumedBy: new List<string> { "LeaveService" },
+            CorrelationId: Guid.NewGuid(),
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new EmployeeCreatedEventPayload(
+                EmployeeId: employeeId,
+                EmployeeNumber: "EMP001",
+                PrincipalId: Guid.NewGuid(),
+                Email: "test@example.com",
+                FullName: "Test Employee",
+                StartDate: DateTimeOffset.UtcNow,
+                DepartmentId: Guid.NewGuid(),
+                PositionId: null,
+                ManagerId: null)
         );
 
         using var scope = _factory.Services.CreateScope();
@@ -68,7 +70,7 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
         
         // Wait for consumer with generous timeout
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeCreatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
+        Assert.True(await harness.Consumed.Any<EmployeeCreatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
 
         // Assert - wait a bit for DB update to commit
         using var verifyScope = _factory.Services.CreateScope();

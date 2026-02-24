@@ -1,6 +1,8 @@
 using Maliev.LeaveService.Domain.Enums;
 using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Tests.TestUtilities;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Employee;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,22 +32,22 @@ public class EmployeeTerminatedEventConsumerTests : IAsyncLifetime
     {
         // Arrange
         var employeeId = Guid.NewGuid();
-        var @event = new Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent(
-            Guid.NewGuid(),
-            nameof(Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent),
-            Maliev.MessagingContracts.Generated.MessageType.Event,
-            "1.0",
-            "EmployeeService",
-            new[] { "LeaveService" },
-            Guid.NewGuid(),
-            null,
-            DateTimeOffset.UtcNow,
-            false,
-            new Maliev.MessagingContracts.Generated.EmployeeTerminatedEventPayload(
-                employeeId,
-                DateTimeOffset.UtcNow,
-                "Test",
-                true)
+        var @event = new EmployeeTerminatedEvent(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(EmployeeTerminatedEvent),
+            MessageType: MessageType.Event,
+            MessageVersion: "1.0",
+            PublishedBy: "EmployeeService",
+            ConsumedBy: new List<string> { "LeaveService" },
+            CorrelationId: Guid.NewGuid(),
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new EmployeeTerminatedEventPayload(
+                EmployeeId: employeeId,
+                TerminationDate: DateTimeOffset.UtcNow,
+                TerminationReason: "Test",
+                EligibleForRehire: true)
         );
 
         using var scope = _factory.Services.CreateScope();
@@ -62,7 +64,7 @@ public class EmployeeTerminatedEventConsumerTests : IAsyncLifetime
         
         // Wait for consumer with generous timeout
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        Assert.True(await harness.Consumed.Any<Maliev.MessagingContracts.Generated.EmployeeTerminatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
+        Assert.True(await harness.Consumed.Any<EmployeeTerminatedEvent>(x => x.Context.Message.Payload.EmployeeId == employeeId, cts.Token));
 
         // Assert - wait a bit for DB update to commit if needed
         using var verifyScope = _factory.Services.CreateScope();

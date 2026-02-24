@@ -1,7 +1,7 @@
 ﻿using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.MessagingContracts.Generated;
-// using Maliev.LeaveService.Domain.Events.Consumed; // Removed
+using Maliev.MessagingContracts.Contracts.Employee;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 

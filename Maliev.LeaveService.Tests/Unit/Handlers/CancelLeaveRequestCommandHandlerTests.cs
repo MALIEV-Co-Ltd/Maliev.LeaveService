@@ -4,6 +4,8 @@ using Maliev.LeaveService.Application.Commands.Handlers;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -77,7 +79,7 @@ public class CancelLeaveRequestCommandHandlerTests
         
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
-        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<Maliev.MessagingContracts.Generated.LeaveRequestCancelledEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<LeaveRequestCancelledEvent>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

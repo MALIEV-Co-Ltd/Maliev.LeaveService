@@ -4,6 +4,8 @@ using Maliev.LeaveService.Application.Commands.Handlers;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -89,7 +91,7 @@ public class ApproveRejectLeaveCommandHandlerTests
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _approvalRepositoryMock.Verify(r => r.AddAsync(It.IsAny<LeaveApproval>(), It.IsAny<CancellationToken>()), Times.Once);
-        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<Maliev.MessagingContracts.Generated.LeaveRequestApprovedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<LeaveRequestApprovedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         _notificationServiceMock.Verify(n => n.NotifyLeaveRequestDecisionAsync(requestId), Times.Once);
     }
 
@@ -144,6 +146,6 @@ public class ApproveRejectLeaveCommandHandlerTests
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _approvalRepositoryMock.Verify(r => r.AddAsync(It.IsAny<LeaveApproval>(), It.IsAny<CancellationToken>()), Times.Once);
-        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<Maliev.MessagingContracts.Generated.LeaveRequestRejectedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _publishEndpointMock.Verify(p => p.Publish(It.IsAny<LeaveRequestRejectedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

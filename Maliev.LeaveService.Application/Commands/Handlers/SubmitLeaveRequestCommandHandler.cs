@@ -1,6 +1,8 @@
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -121,25 +123,25 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
             leaveRequest.Id, leaveRequest.EmployeeId);
 
         // 9. Publish Event
-        await _publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEvent(
-            Guid.NewGuid(),
-            nameof(Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEvent),
-            Maliev.MessagingContracts.Generated.MessageType.Event,
-            "1.0",
-            "LeaveService",
-            new[] { "NotificationService" },
-            Guid.NewGuid(),
-            null,
-            DateTimeOffset.UtcNow,
-            false,
-            new Maliev.MessagingContracts.Generated.LeaveRequestSubmittedEventPayload(
-                leaveRequest.Id,
-                leaveRequest.EmployeeId,
-                leaveRequest.LeaveType.ToString(),
-                leaveRequest.StartDate,
-                leaveRequest.EndDate,
-                (double)leaveRequest.TotalDays,
-                leaveRequest.CreatedAt)
+        await _publishEndpoint.Publish(new LeaveRequestSubmittedEvent(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(LeaveRequestSubmittedEvent),
+            MessageType: MessageType.Event,
+            MessageVersion: "1.0",
+            PublishedBy: "LeaveService",
+            ConsumedBy: new List<string> { "NotificationService" },
+            CorrelationId: Guid.NewGuid(),
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new LeaveRequestSubmittedEventPayload(
+                RequestId: leaveRequest.Id,
+                EmployeeId: leaveRequest.EmployeeId,
+                LeaveType: leaveRequest.LeaveType.ToString(),
+                StartDate: leaveRequest.StartDate,
+                EndDate: leaveRequest.EndDate,
+                TotalDays: (double)leaveRequest.TotalDays,
+                SubmittedAt: leaveRequest.CreatedAt)
         ), cancellationToken);
 
         return CommandResult.Success(leaveRequest.Id);

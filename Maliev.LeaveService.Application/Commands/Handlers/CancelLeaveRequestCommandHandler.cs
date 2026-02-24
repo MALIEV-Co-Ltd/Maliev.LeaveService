@@ -1,5 +1,7 @@
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Enums;
+using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -81,22 +83,22 @@ public class CancelLeaveRequestCommandHandler : IRequestHandler<CancelLeaveReque
 
         _logger.LogInformation("Request {RequestId} cancelled (Audit: FR-027 compliant)", leaveRequest.Id);
 
-        await _publishEndpoint.Publish(new Maliev.MessagingContracts.Generated.LeaveRequestCancelledEvent(
-            Guid.NewGuid(),
-            nameof(Maliev.MessagingContracts.Generated.LeaveRequestCancelledEvent),
-            Maliev.MessagingContracts.Generated.MessageType.Event,
-            "1.0",
-            "LeaveService",
-            new[] { "NotificationService" },
-            Guid.NewGuid(),
-            null,
-            DateTimeOffset.UtcNow,
-            false,
-            new Maliev.MessagingContracts.Generated.LeaveRequestCancelledEventPayload(
-                leaveRequest.Id,
-                leaveRequest.EmployeeId,
-                request.Comments ?? string.Empty,
-                DateTimeOffset.UtcNow)
+        await _publishEndpoint.Publish(new LeaveRequestCancelledEvent(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(LeaveRequestCancelledEvent),
+            MessageType: MessageType.Event,
+            MessageVersion: "1.0",
+            PublishedBy: "LeaveService",
+            ConsumedBy: new List<string> { "NotificationService" },
+            CorrelationId: Guid.NewGuid(),
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new LeaveRequestCancelledEventPayload(
+                RequestId: leaveRequest.Id,
+                EmployeeId: leaveRequest.EmployeeId,
+                Reason: request.Comments ?? string.Empty,
+                CancelledAt: DateTimeOffset.UtcNow)
         ), cancellationToken);
 
         if (oldStatus == LeaveRequestStatus.Approved)

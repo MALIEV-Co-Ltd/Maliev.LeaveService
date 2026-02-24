@@ -1,5 +1,6 @@
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
