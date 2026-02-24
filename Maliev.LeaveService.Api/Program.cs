@@ -72,6 +72,7 @@ try
 
     builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveAccrualBackgroundService>();
     builder.Services.AddHostedService<Maliev.LeaveService.Infrastructure.BackgroundServices.LeaveExpirationAlertBackgroundService>();
+    builder.AddIAMServiceClient("leave");
     builder.Services.AddIAMRegistration<LeaveIAMRegistrationService>("leave");
 
     var app = builder.Build();
