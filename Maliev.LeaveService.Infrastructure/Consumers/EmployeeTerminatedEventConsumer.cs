@@ -1,6 +1,6 @@
-﻿using Maliev.LeaveService.Application.Interfaces;
+using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Enums;
-using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts;
 using Maliev.MessagingContracts.Contracts.Employee;
 using MassTransit;
 using Microsoft.Extensions.Logging;

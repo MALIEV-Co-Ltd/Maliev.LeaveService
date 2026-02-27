@@ -3,7 +3,7 @@ using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.Commands.Handlers;
 using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Entities;
-using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts;
 using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
 using Microsoft.Extensions.Logging;

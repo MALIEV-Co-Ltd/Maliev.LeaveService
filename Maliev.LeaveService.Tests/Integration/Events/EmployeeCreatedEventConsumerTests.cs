@@ -2,7 +2,7 @@ using Maliev.LeaveService.Domain.Entities;
 using Maliev.LeaveService.Domain.Enums;
 using Maliev.LeaveService.Infrastructure.Data;
 using Maliev.LeaveService.Tests.TestUtilities;
-using Maliev.MessagingContracts.Generated;
+using Maliev.MessagingContracts;
 using Maliev.MessagingContracts.Contracts.Employee;
 using MassTransit;
 using MassTransit.Testing;
