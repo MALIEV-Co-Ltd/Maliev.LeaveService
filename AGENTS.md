@@ -52,7 +52,7 @@ This project follows **Clean Architecture** with **CQRS** pattern.
 - **Dependency Injection**: Constructor injection only. Assign to `readonly` private fields.
 - **Logging**: Inject `ILogger<T>`. Log meaningful events.
   - usage: `_logger.LogInformation("Processing {Id}...", id);` (Structured logging).
-- **Validation**: Perform validation in the Handler or via FluentValidation (if present).
+- **Validation**: Perform validation in the Handler using Data Annotations.
 - **Comments**: XML documentation (`///`) for public APIs and Domain entities.
 
 ## 4. Testing Guidelines
