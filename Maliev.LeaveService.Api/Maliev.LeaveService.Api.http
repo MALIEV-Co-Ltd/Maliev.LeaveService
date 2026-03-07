@@ -1,6 +1,0 @@
-@Maliev.LeaveService.Api_HostAddress = http://localhost:5276
-
-GET {{Maliev.LeaveService.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -1,7 +1,9 @@
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Domain.Authorization;
+using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
@@ -9,8 +11,8 @@ namespace Maliev.LeaveService.Api.Controllers;
 /// Provides leave-related reports and analytics.
 /// </summary>
 [ApiController]
-[Route("leave/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("leave/v{version:apiVersion}/[controller]")]
 public class ReportsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -31,6 +33,7 @@ public class ReportsController : ControllerBase
     /// <param name="departmentId">Optional department filter.</param>
     /// <returns>Leave utilization statistics.</returns>
     [HttpGet("utilization")]
+    [RequirePermission(LeavePermissions.Reports)]
     public async Task<IActionResult> GetUtilizationReport([FromQuery] int? year, [FromQuery] Guid? departmentId)
     {
         var query = new GetLeaveUtilizationReportQuery

@@ -1,7 +1,9 @@
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Domain.Authorization;
+using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
@@ -9,8 +11,8 @@ namespace Maliev.LeaveService.Api.Controllers;
 /// Manages available leave types and their associated policies.
 /// </summary>
 [ApiController]
-[Route("leave/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("leave/v{version:apiVersion}/[controller]")]
 public class LeaveTypesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -29,6 +31,7 @@ public class LeaveTypesController : ControllerBase
     /// </summary>
     /// <returns>A collection of leave policies.</returns>
     [HttpGet]
+    [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> GetAll()
     {
         var query = new GetLeaveTypesQuery();

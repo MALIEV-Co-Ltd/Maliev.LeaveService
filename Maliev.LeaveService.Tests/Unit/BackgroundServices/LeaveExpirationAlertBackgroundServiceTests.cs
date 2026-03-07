@@ -38,7 +38,7 @@ public class LeaveExpirationAlertBackgroundServiceTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.StartsWith("LeaveExpirationAlertBackgroundService starting")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("starting")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

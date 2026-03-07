@@ -1,13 +1,15 @@
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Domain.Authorization;
+using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
 [ApiController]
-[Route("leave/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("leave/v{version:apiVersion}/[controller]")]
 public class LeaveBalancesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -18,6 +20,7 @@ public class LeaveBalancesController : ControllerBase
     }
 
     [HttpGet("{employeeId:guid}")]
+    [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetBalances(Guid employeeId, [FromQuery] int? year)
     {
         var query = new GetLeaveBalancesQuery
