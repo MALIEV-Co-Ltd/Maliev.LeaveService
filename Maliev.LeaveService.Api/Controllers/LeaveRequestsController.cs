@@ -1,15 +1,17 @@
 using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.DTOs.Requests;
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Domain.Authorization;
+using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
 [ApiController]
-[Route("leave/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("leave/v{version:apiVersion}/[controller]")]
 public class LeaveRequestsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -20,6 +22,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpPost("{employeeId:guid}")]
+    [RequirePermission(LeavePermissions.Create)]
     public async Task<IActionResult> Submit(Guid employeeId, [FromBody] SubmitLeaveRequestDto dto)
     {
         var command = new SubmitLeaveRequestCommand
@@ -43,6 +46,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpGet("employee/{employeeId:guid}")]
+    [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetByEmployee(Guid employeeId, [FromQuery] int? year)
     {
         var query = new GetLeaveRequestsQuery
@@ -55,6 +59,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpGet("pending/{managerId:guid}")]
+    [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetPendingApprovals(Guid managerId)
     {
         var query = new GetPendingApprovalsQuery { ApproverId = managerId };
@@ -63,6 +68,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/decision")]
+    [RequirePermission(LeavePermissions.Approve)]
     public async Task<IActionResult> ProcessDecision(Guid requestId, [FromQuery] Guid approverId, [FromBody] ApproveRejectLeaveDto dto)
     {
         var command = new ApproveRejectLeaveCommand
@@ -84,6 +90,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpPut("{requestId:guid}/cancel")]
+    [RequirePermission(LeavePermissions.Cancel)]
     public async Task<IActionResult> Cancel(Guid requestId, [FromQuery] Guid requestedBy, [FromQuery] string? comments)
     {
         var command = new CancelLeaveRequestCommand

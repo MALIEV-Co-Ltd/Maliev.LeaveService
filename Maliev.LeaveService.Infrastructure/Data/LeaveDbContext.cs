@@ -21,6 +21,18 @@ public class LeaveDbContext : DbContext
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LeaveDbContext).Assembly);
 
+        modelBuilder.Entity<LeaveRequest>().Property<uint>("xmin")
+            .HasColumnType("xid")
+            .IsRowVersion();
+
+        modelBuilder.Entity<LeaveBalance>().Property<uint>("xmin")
+            .HasColumnType("xid")
+            .IsRowVersion();
+
+        modelBuilder.Entity<LeaveApproval>().Property<uint>("xmin")
+            .HasColumnType("xid")
+            .IsRowVersion();
+
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
             // Set table name to snake_case

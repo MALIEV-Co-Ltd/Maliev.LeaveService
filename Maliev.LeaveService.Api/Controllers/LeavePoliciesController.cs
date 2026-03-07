@@ -1,15 +1,17 @@
 using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.DTOs.Requests;
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Domain.Authorization;
+using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
 [ApiController]
-[Route("leave/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("leave/v{version:apiVersion}/[controller]")]
 public class LeavePoliciesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -20,6 +22,7 @@ public class LeavePoliciesController : ControllerBase
     }
 
     [HttpGet]
+    [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> GetAll()
     {
         var query = new GetLeavePoliciesQuery();
@@ -28,6 +31,7 @@ public class LeavePoliciesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateLeavePolicyDto dto)
     {
         var command = new CreateLeavePolicyCommand
@@ -51,6 +55,7 @@ public class LeavePoliciesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLeavePolicyDto dto)
     {
         var command = new UpdateLeavePolicyCommand

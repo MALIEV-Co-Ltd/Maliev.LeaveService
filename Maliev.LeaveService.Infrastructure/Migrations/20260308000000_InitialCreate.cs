@@ -1,4 +1,6 @@
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -38,7 +40,8 @@ namespace Maliev.LeaveService.Infrastructure.Migrations
                     used = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     pending = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     carried_forward = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
-                    expiration_date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    expiration_date = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, defaultValue: 0u)
                 },
                 constraints: table =>
                 {
@@ -77,7 +80,8 @@ namespace Maliev.LeaveService.Infrastructure.Migrations
                     reason = table.Column<string>(type: "text", nullable: true),
                     status = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, defaultValue: 0u)
                 },
                 constraints: table =>
                 {
@@ -93,7 +97,8 @@ namespace Maliev.LeaveService.Infrastructure.Migrations
                     approver_id = table.Column<Guid>(type: "uuid", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     comments = table.Column<string>(type: "text", nullable: true),
-                    decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, defaultValue: 0u)
                 },
                 constraints: table =>
                 {
@@ -113,6 +118,11 @@ namespace Maliev.LeaveService.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_leave_approvals_approver_id",
+                table: "leave_approvals",
+                column: "approver_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_leave_approvals_leave_request_id",
                 table: "leave_approvals",
                 column: "leave_request_id");
@@ -128,6 +138,16 @@ namespace Maliev.LeaveService.Infrastructure.Migrations
                 table: "leave_policies",
                 column: "leave_type",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_leave_requests_employee_id",
+                table: "leave_requests",
+                column: "employee_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_leave_requests_status",
+                table: "leave_requests",
+                column: "status");
         }
 
         /// <inheritdoc />
