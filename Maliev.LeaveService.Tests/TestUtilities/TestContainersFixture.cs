@@ -7,7 +7,9 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 
 public class TestContainersFixture : IAsyncLifetime
 {
-    public PostgreSqlContainer PostgreSqlContainer { get; } = new PostgreSqlBuilder().WithImage("postgres:18-alpine")
+    public PostgreSqlContainer PostgreSqlContainer { get; } = 
+                #pragma warning disable CS0618
+        new PostgreSqlBuilder().WithImage("postgres:18-alpine")
         .WithDatabase("leave_db")
         .WithUsername("postgres")
         .WithPassword("postgres")
@@ -20,6 +22,7 @@ public class TestContainersFixture : IAsyncLifetime
 
     public RedisContainer RedisContainer { get; } = new RedisBuilder().WithImage("redis:8.4-alpine")
         .Build();
+#pragma warning restore CS0618
 
     public async Task InitializeAsync()
     {
@@ -39,3 +42,7 @@ public class TestContainersFixture : IAsyncLifetime
         );
     }
 }
+
+
+
+

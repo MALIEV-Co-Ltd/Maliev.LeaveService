@@ -24,9 +24,12 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder().WithImage("postgres:18-alpine").Build();
+    private readonly PostgreSqlContainer _postgresContainer = 
+                #pragma warning disable CS0618
+        new PostgreSqlBuilder().WithImage("postgres:18-alpine").Build();
     private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine").Build();
     private readonly RabbitMqContainer _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine").Build();
+#pragma warning restore CS0618
     private readonly RSA _testRsa = RSA.Create(2048);
 
     public TestWebApplicationFactory()
@@ -265,3 +268,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         _testRsa.Dispose();
     }
 }
+
+
+
+
