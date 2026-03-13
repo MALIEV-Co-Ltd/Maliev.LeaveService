@@ -8,7 +8,7 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 public class TestContainersFixture : IAsyncLifetime
 {
     public PostgreSqlContainer PostgreSqlContainer { get; } = 
-                #pragma warning disable CS0618
+#pragma warning disable CS0618
         new PostgreSqlBuilder().WithImage("postgres:18-alpine")
         .WithDatabase("leave_db")
         .WithUsername("postgres")
