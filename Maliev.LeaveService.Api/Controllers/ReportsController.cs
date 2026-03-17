@@ -11,7 +11,7 @@ namespace Maliev.LeaveService.Api.Controllers;
 /// Provides leave-related reports and analytics.
 /// </summary>
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion("1")]
 [Route("leave/v{version:apiVersion}/[controller]")]
 public class ReportsController : ControllerBase
 {

@@ -11,7 +11,7 @@ namespace Maliev.LeaveService.Api.Controllers;
 /// Manages available leave types and their associated policies.
 /// </summary>
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion("1")]
 [Route("leave/v{version:apiVersion}/[controller]")]
 public class LeaveTypesController : ControllerBase
 {

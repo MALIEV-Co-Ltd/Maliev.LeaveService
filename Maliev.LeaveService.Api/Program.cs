@@ -115,6 +115,9 @@ finally
     loggerFactory.Dispose();
 }
 
+/// <summary>
+/// Entry point for the Leave Service API.
+/// </summary>
 public partial class Program
 {
     internal static partial class Log

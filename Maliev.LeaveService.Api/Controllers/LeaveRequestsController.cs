@@ -9,18 +9,31 @@ using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
+/// <summary>
+/// Controller for managing leave requests.
+/// </summary>
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion("1")]
 [Route("leave/v{version:apiVersion}/[controller]")]
 public class LeaveRequestsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LeaveRequestsController"/> class.
+    /// </summary>
+    /// <param name="mediator">The mediator instance.</param>
     public LeaveRequestsController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Submits a new leave request.
+    /// </summary>
+    /// <param name="employeeId">The employee identifier.</param>
+    /// <param name="dto">The leave request data.</param>
+    /// <returns>The created leave request.</returns>
     [HttpPost("{employeeId:guid}")]
     [RequirePermission(LeavePermissions.Create)]
     public async Task<IActionResult> Submit(Guid employeeId, [FromBody] SubmitLeaveRequestDto dto)
@@ -45,6 +58,12 @@ public class LeaveRequestsController : ControllerBase
         return BadRequest(new { message = result.ErrorMessage });
     }
 
+    /// <summary>
+    /// Gets leave requests for an employee.
+    /// </summary>
+    /// <param name="employeeId">The employee identifier.</param>
+    /// <param name="year">Optional year filter.</param>
+    /// <returns>List of leave requests.</returns>
     [HttpGet("employee/{employeeId:guid}")]
     [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetByEmployee(Guid employeeId, [FromQuery] int? year)
@@ -58,6 +77,11 @@ public class LeaveRequestsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Gets pending leave approvals for a manager.
+    /// </summary>
+    /// <param name="managerId">The manager identifier.</param>
+    /// <returns>List of pending leave approvals.</returns>
     [HttpGet("pending/{managerId:guid}")]
     [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetPendingApprovals(Guid managerId)
@@ -67,6 +91,13 @@ public class LeaveRequestsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Approves or rejects a leave request.
+    /// </summary>
+    /// <param name="requestId">The leave request identifier.</param>
+    /// <param name="approverId">The approver identifier.</param>
+    /// <param name="dto">The decision data.</param>
+    /// <returns>The approval result.</returns>
     [HttpPost("{requestId:guid}/decision")]
     [RequirePermission(LeavePermissions.Approve)]
     public async Task<IActionResult> ProcessDecision(Guid requestId, [FromQuery] Guid approverId, [FromBody] ApproveRejectLeaveDto dto)
@@ -89,6 +120,13 @@ public class LeaveRequestsController : ControllerBase
         return BadRequest(new { message = result.ErrorMessage });
     }
 
+    /// <summary>
+    /// Cancels a leave request.
+    /// </summary>
+    /// <param name="requestId">The leave request identifier.</param>
+    /// <param name="requestedBy">The person cancelling the request.</param>
+    /// <param name="comments">Optional cancellation comments.</param>
+    /// <returns>The cancellation result.</returns>
     [HttpPut("{requestId:guid}/cancel")]
     [RequirePermission(LeavePermissions.Cancel)]
     public async Task<IActionResult> Cancel(Guid requestId, [FromQuery] Guid requestedBy, [FromQuery] string? comments)

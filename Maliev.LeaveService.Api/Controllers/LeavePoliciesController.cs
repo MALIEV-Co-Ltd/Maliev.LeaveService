@@ -9,18 +9,29 @@ using Asp.Versioning;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
+/// <summary>
+/// Controller for managing leave policies.
+/// </summary>
 [ApiController]
-[ApiVersion("1.0")]
+[ApiVersion("1")]
 [Route("leave/v{version:apiVersion}/[controller]")]
 public class LeavePoliciesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LeavePoliciesController"/> class.
+    /// </summary>
+    /// <param name="mediator">The mediator instance.</param>
     public LeavePoliciesController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Gets all leave policies.
+    /// </summary>
+    /// <returns>List of leave policies.</returns>
     [HttpGet]
     [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> GetAll()
@@ -30,6 +41,11 @@ public class LeavePoliciesController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Creates a new leave policy.
+    /// </summary>
+    /// <param name="dto">The leave policy data.</param>
+    /// <returns>The created leave policy.</returns>
     [HttpPost]
     [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateLeavePolicyDto dto)
@@ -54,6 +70,12 @@ public class LeavePoliciesController : ControllerBase
         return BadRequest(new { message = result.ErrorMessage });
     }
 
+    /// <summary>
+    /// Updates an existing leave policy.
+    /// </summary>
+    /// <param name="id">The leave policy identifier.</param>
+    /// <param name="dto">The updated leave policy data.</param>
+    /// <returns>The updated leave policy.</returns>
     [HttpPut("{id:guid}")]
     [RequirePermission(LeavePermissions.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLeavePolicyDto dto)
