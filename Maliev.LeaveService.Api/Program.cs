@@ -79,7 +79,11 @@ try
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
     // --- 8. Database Migrations ---
-    await app.MigrateDatabaseAsync<LeaveDbContext>();
+    // Skip migrations in test environment - tests use manual schema creation via ResetDatabaseAsync
+    if (Environment.GetEnvironmentVariable("SKIP_MIGRATIONS") != "true")
+    {
+        await app.MigrateDatabaseAsync<LeaveDbContext>();
+    }
 
     // --- 9. Middleware Pipeline ---
     app.UseStandardMiddleware();

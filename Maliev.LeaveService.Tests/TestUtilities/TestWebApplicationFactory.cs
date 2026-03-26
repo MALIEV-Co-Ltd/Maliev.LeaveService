@@ -96,6 +96,9 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
         builder.ConfigureTestServices(services =>
         {
+            // Skip EF Core migrations in tests - we use manual schema creation in ResetDatabaseAsync
+            Environment.SetEnvironmentVariable("SKIP_MIGRATIONS", "true");
+
             services.PostConfigureAll<JwtBearerOptions>(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -137,10 +140,18 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
         Console.WriteLine($"Using connection string: {connectionString}");
 
+        // Drop tables first (in reverse order due to foreign key constraints) then create them
+        // This handles the case where EF Core migrations already created the tables
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"leave_approvals\"");
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"leave_requests\"");
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"leave_balances\"");
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"leave_policies\"");
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"accrual_runs\"");
+
         // Create tables using raw SQL - each statement separately for reliability
         // Note: xmin is a shadow property in EF Core, don't include it in raw SQL
         await context.Database.ExecuteSqlRawAsync(@"
-            CREATE TABLE IF NOT EXISTS ""accrual_runs"" (
+            CREATE TABLE ""accrual_runs"" (
                 ""id"" uuid PRIMARY KEY,
                 ""year"" int NOT NULL,
                 ""month"" int NOT NULL,
@@ -150,7 +161,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             )");
 
         await context.Database.ExecuteSqlRawAsync(@"
-            CREATE TABLE IF NOT EXISTS ""leave_balances"" (
+            CREATE TABLE ""leave_balances"" (
                 ""id"" uuid PRIMARY KEY,
                 ""employee_id"" uuid NOT NULL,
                 ""leave_type"" int NOT NULL,
@@ -163,7 +174,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             )");
 
         await context.Database.ExecuteSqlRawAsync(@"
-            CREATE TABLE IF NOT EXISTS ""leave_policies"" (
+            CREATE TABLE ""leave_policies"" (
                 ""id"" uuid PRIMARY KEY,
                 ""leave_type"" int NOT NULL,
                 ""default_entitlement"" numeric(5,2) NOT NULL,
@@ -175,7 +186,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             )");
 
         await context.Database.ExecuteSqlRawAsync(@"
-            CREATE TABLE IF NOT EXISTS ""leave_requests"" (
+            CREATE TABLE ""leave_requests"" (
                 ""id"" uuid PRIMARY KEY,
                 ""employee_id"" uuid NOT NULL,
                 ""leave_type"" int NOT NULL,
@@ -190,7 +201,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             )");
 
         await context.Database.ExecuteSqlRawAsync(@"
-            CREATE TABLE IF NOT EXISTS ""leave_approvals"" (
+            CREATE TABLE ""leave_approvals"" (
                 ""id"" uuid PRIMARY KEY,
                 ""leave_request_id"" uuid NOT NULL,
                 ""approver_id"" uuid NOT NULL,
@@ -201,25 +212,22 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             )");
 
         // Create indexes
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_requests_employee_id\" ON \"leave_requests\"(\"employee_id\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_requests_status\" ON \"leave_requests\"(\"status\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_approvals_approver_id\" ON \"leave_approvals\"(\"approver_id\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_approvals_leave_request_id\" ON \"leave_approvals\"(\"leave_request_id\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_balances_employee_id_leave_type_year\" ON \"leave_balances\"(\"employee_id\", \"leave_type\", \"year\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"ix_leave_policies_leave_type\" ON \"leave_policies\"(\"leave_type\")");
-        await context.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IF NOT EXISTS \"ix_accrual_runs_year_month\" ON \"accrual_runs\"(\"year\", \"month\")");
-
-        // Now get the context from the service provider for truncating and seeding
-        using var scope = Services.CreateScope();
-        var serviceContext = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_requests_employee_id\" ON \"leave_requests\"(\"employee_id\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_requests_status\" ON \"leave_requests\"(\"status\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_approvals_approver_id\" ON \"leave_approvals\"(\"approver_id\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_approvals_leave_request_id\" ON \"leave_approvals\"(\"leave_request_id\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_balances_employee_id_leave_type_year\" ON \"leave_balances\"(\"employee_id\", \"leave_type\", \"year\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE INDEX \"ix_leave_policies_leave_type\" ON \"leave_policies\"(\"leave_type\")");
+        await context.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX \"ix_accrual_runs_year_month\" ON \"accrual_runs\"(\"year\", \"month\")");
 
         // Truncate all tables (ignore errors if tables don't exist - first run scenario)
+        // Note: We use the same context here to avoid accessing Services which triggers server creation
         var tableNames = new[] { "leave_approvals", "leave_requests", "leave_balances", "leave_policies", "accrual_runs" };
         foreach (var table in tableNames)
         {
             try
             {
-                await serviceContext.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE \"{table}\" RESTART IDENTITY CASCADE");
+                await context.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE \"{table}\" RESTART IDENTITY CASCADE");
             }
             catch
             {
@@ -228,7 +236,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         }
 
         // Seed default leave policies
-        await SeedDefaultPoliciesAsync(serviceContext);
+        await SeedDefaultPoliciesAsync(context);
     }
 
     private async Task SeedDefaultPoliciesAsync(LeaveDbContext context)
