@@ -39,6 +39,13 @@ public class LeaveRequestRepository : ILeaveRequestRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<int> GetPendingApprovalsCountAsync(Guid managerId, CancellationToken cancellationToken = default)
+    {
+        return await _context.LeaveRequests
+            .Where(r => r.Approvals.Any(a => a.ApproverId == managerId && a.Status == Domain.Enums.ApprovalStatus.Pending))
+            .CountAsync(cancellationToken);
+    }
+
     public async Task<bool> HasOverlapAsync(Guid employeeId, DateTimeOffset startDate, DateTimeOffset endDate, CancellationToken cancellationToken = default)
     {
         return await _context.LeaveRequests

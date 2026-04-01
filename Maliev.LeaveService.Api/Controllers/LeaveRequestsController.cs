@@ -92,6 +92,21 @@ public class LeaveRequestsController : ControllerBase
     }
 
     /// <summary>
+    /// Gets the count of pending leave approvals for a manager.
+    /// </summary>
+    /// <param name="managerId">The manager identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The count of pending approvals.</returns>
+    [HttpGet("pending-count")]
+    [RequirePermission(LeavePermissions.Read)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPendingApprovalsCount([FromQuery] Guid managerId, CancellationToken cancellationToken)
+    {
+        var count = await _mediator.Send(new GetPendingApprovalsCountQuery { ApproverId = managerId }, cancellationToken);
+        return Ok(new { count });
+    }
+
+    /// <summary>
     /// Approves or rejects a leave request.
     /// </summary>
     /// <param name="requestId">The leave request identifier.</param>
