@@ -102,6 +102,11 @@ public class LeaveRequestsController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingApprovalsCount([FromQuery] Guid managerId, CancellationToken cancellationToken)
     {
+        if (managerId == Guid.Empty)
+        {
+            return Ok(new { count = 0 });
+        }
+
         var count = await _mediator.Send(new GetPendingApprovalsCountQuery { ApproverId = managerId }, cancellationToken);
         return Ok(new { count });
     }
