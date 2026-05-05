@@ -1,6 +1,7 @@
 using Maliev.LeaveService.Application.Commands.Handlers;
-using Maliev.LeaveService.Domain.Commands;
+using Maliev.MessagingContracts.Contracts.Leave;
 using MassTransit;
+using LocalUndoCloseLeaveBalanceCommand = Maliev.LeaveService.Domain.Commands.UndoCloseLeaveBalanceCommand;
 
 namespace Maliev.LeaveService.Infrastructure.Consumers;
 
@@ -15,6 +16,11 @@ public class UndoCloseLeaveBalanceConsumer : IConsumer<UndoCloseLeaveBalanceComm
 
     public async Task Consume(ConsumeContext<UndoCloseLeaveBalanceCommand> context)
     {
-        await _handler.HandleAsync(context.Message, context.CancellationToken);
+        await _handler.HandleAsync(
+            new LocalUndoCloseLeaveBalanceCommand
+            {
+                EmployeeId = context.Message.Payload.EmployeeId
+            },
+            context.CancellationToken);
     }
 }

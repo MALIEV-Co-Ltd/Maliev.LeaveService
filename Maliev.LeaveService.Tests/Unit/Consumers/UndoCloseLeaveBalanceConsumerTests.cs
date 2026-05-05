@@ -1,8 +1,8 @@
-using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.Commands.Handlers;
 using Maliev.LeaveService.Application.Interfaces;
-using Maliev.LeaveService.Domain.Commands;
 using Maliev.LeaveService.Infrastructure.Consumers;
+using Maliev.MessagingContracts.Contracts.Leave;
+using Maliev.MessagingContracts.Contracts.Shared;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -21,10 +21,7 @@ public class UndoCloseLeaveBalanceConsumerTests
         var handlerMock = new UndoCloseLeaveBalanceCommandHandler(balanceRepoMock.Object, loggerMock.Object);
         var consumer = new UndoCloseLeaveBalanceConsumer(handlerMock);
         
-        var command = new UndoCloseLeaveBalanceCommand
-        {
-            EmployeeId = Guid.NewGuid()
-        };
+        var command = CreateCommand(Guid.NewGuid());
         
         var contextMock = new Mock<ConsumeContext<UndoCloseLeaveBalanceCommand>>();
         contextMock.Setup(c => c.Message).Returns(command);
@@ -35,5 +32,21 @@ public class UndoCloseLeaveBalanceConsumerTests
 
         // Assert - verify the handler was called (it just logs)
         contextMock.Verify(c => c.Message, Times.Once);
+    }
+
+    private static UndoCloseLeaveBalanceCommand CreateCommand(Guid employeeId)
+    {
+        return new UndoCloseLeaveBalanceCommand(
+            MessageId: Guid.NewGuid(),
+            MessageName: nameof(UndoCloseLeaveBalanceCommand),
+            MessageType: MessageType.Command,
+            MessageVersion: "1.0",
+            PublishedBy: "EmployeeService",
+            ConsumedBy: ["LeaveService"],
+            CorrelationId: employeeId,
+            CausationId: null,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            IsPublic: false,
+            Payload: new UndoCloseLeaveBalanceCommandPayload(employeeId));
     }
 }
