@@ -45,6 +45,7 @@ _._
 *~
 CodeCoverage/
 *.user
+*.csproj.user
 *.userosscache
 *.sln.docstates
 *.rsuser
