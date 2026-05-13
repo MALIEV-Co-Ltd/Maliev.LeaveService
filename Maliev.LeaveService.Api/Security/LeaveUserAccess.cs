@@ -28,6 +28,7 @@ internal static class LeaveUserAccess
                user.HasClaim(UserTypeClaim, "service") ||
                user.HasClaim(RolesClaim, AdminRole) ||
                user.HasClaim(ClaimTypes.Role, AdminRole) ||
+               user.HasClaim(PermissionsClaim, "*") ||
                user.HasClaim(PermissionsClaim, AdminPermission);
     }
 
