@@ -19,7 +19,7 @@ public class LeaveExpirationAlertBackgroundServiceTests
         // Arrange
         var loggerMock = new Mock<ILogger<LeaveExpirationAlertBackgroundService>>();
         var serviceProviderMock = new Mock<IServiceProvider>();
-        
+
         var service = new LeaveExpirationAlertBackgroundService(serviceProviderMock.Object, loggerMock.Object);
 
         using var cts = new CancellationTokenSource();
@@ -39,7 +39,7 @@ public class LeaveExpirationAlertBackgroundServiceTests
                 LogLevel.Information,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("starting")),
-                It.IsAny<Exception>(),
+                It.IsAny<Exception?>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
@@ -51,7 +51,7 @@ public class LeaveExpirationAlertBackgroundServiceTests
         var loggerMock = new Mock<ILogger<LeaveExpirationAlertBackgroundService>>();
         var balanceRepoMock = new Mock<ILeaveBalanceRepository>();
         var notificationServiceMock = new Mock<INotificationService>();
-        
+
         var serviceProviderMock = new Mock<IServiceProvider>();
         serviceProviderMock
             .Setup(x => x.GetService(typeof(ILeaveBalanceRepository)))
@@ -73,7 +73,7 @@ public class LeaveExpirationAlertBackgroundServiceTests
             CarriedForward = 5,
             ExpirationDate = targetDate
         };
-        
+
         balanceRepoMock
             .Setup(x => x.GetExpiringBalancesAsync(targetDate, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { expiringBalance });
@@ -83,14 +83,14 @@ public class LeaveExpirationAlertBackgroundServiceTests
         services.AddScoped(_ => balanceRepoMock.Object);
         services.AddScoped(_ => notificationServiceMock.Object);
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Use reflection to call the private method
         var service = new LeaveExpirationAlertBackgroundService(serviceProvider, loggerMock.Object);
 
         // We can't easily test the private method, so let's test via the public API
         // by checking that the service starts and has the right configuration
         var startTime = DateTimeOffset.UtcNow;
-        
+
         // Just verify the service can be created
         Assert.NotNull(service);
     }
