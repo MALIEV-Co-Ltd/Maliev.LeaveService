@@ -99,6 +99,39 @@ public class SubmitLeaveRequestCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_MissingBalanceWithActivePolicy_InitializesBalanceAndReturnsSuccess()
+    {
+        // Arrange
+        var startDate = DateTimeOffset.UtcNow.AddDays(7).Date;
+        var command = new SubmitLeaveRequestCommand
+        {
+            EmployeeId = Guid.NewGuid(),
+            LeaveType = LeaveType.Annual,
+            StartDate = startDate,
+            EndDate = startDate.AddDays(1),
+            Reason = "Vacation"
+        };
+
+        _balanceRepositoryMock.Setup(r => r.GetByEmployeeAndTypeAsync(command.EmployeeId, command.LeaveType, It.IsAny<int>()))
+            .ReturnsAsync((LeaveBalance?)null);
+        _requestRepositoryMock.Setup(r => r.HasOverlapAsync(command.EmployeeId, command.StartDate, command.EndDate))
+            .ReturnsAsync(false);
+        _policyRepositoryMock.Setup(r => r.GetByTypeAsync(command.LeaveType))
+            .ReturnsAsync(new LeavePolicy { LeaveType = command.LeaveType, DefaultEntitlement = 20, IsActive = true });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        _balanceRepositoryMock.Verify(r => r.AddAsync(It.Is<LeaveBalance>(b =>
+            b.EmployeeId == command.EmployeeId &&
+            b.LeaveType == command.LeaveType &&
+            b.Entitled == 20)), Times.Once);
+        _balanceRepositoryMock.Verify(r => r.UpdateAsync(It.Is<LeaveBalance>(b => b.Pending == 2)), Times.Once);
+    }
+
+    [Fact]
     public async Task Handle_OverlappingRequest_ShouldReturnFailure()
     {
         // Arrange

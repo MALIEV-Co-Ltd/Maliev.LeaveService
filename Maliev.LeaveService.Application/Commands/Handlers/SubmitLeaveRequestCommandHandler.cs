@@ -72,12 +72,32 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
         // 4. Balance Validation (FR-004)
         var year = request.StartDate.Year;
         var balance = await _balanceRepository.GetByEmployeeAndTypeAsync(request.EmployeeId, request.LeaveType, year, cancellationToken);
+        var policy = await _policyRepository.GetByTypeAsync(request.LeaveType, cancellationToken);
 
         if (balance == null)
         {
-            _logger.LogWarning("No leave balance found for employee {EmployeeId}, type {LeaveType}, year {Year}",
-                request.EmployeeId, request.LeaveType, year);
-            return CommandResult.Failure($"No leave balance found for {request.LeaveType} in {year}.");
+            if (policy == null || !policy.IsActive)
+            {
+                _logger.LogWarning("No leave balance or active policy found for employee {EmployeeId}, type {LeaveType}, year {Year}",
+                    request.EmployeeId, request.LeaveType, year);
+                return CommandResult.Failure($"No leave balance found for {request.LeaveType} in {year}.");
+            }
+
+            balance = new LeaveBalance
+            {
+                Id = Guid.NewGuid(),
+                EmployeeId = request.EmployeeId,
+                LeaveType = request.LeaveType,
+                Year = year,
+                Entitled = policy.DefaultEntitlement,
+                Used = 0,
+                Pending = 0,
+                CarriedForward = 0
+            };
+
+            await _balanceRepository.AddAsync(balance, cancellationToken);
+            _logger.LogInformation("Initialized missing {LeaveType} balance for employee {EmployeeId}, year {Year}",
+                request.LeaveType, request.EmployeeId, year);
         }
 
         decimal requestedDays = (request.HalfDayPeriod != HalfDayPeriod.FullDay) ? 0.5m : (decimal)duration;
@@ -90,7 +110,6 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
         }
 
         // 5. Policy Check
-        var policy = await _policyRepository.GetByTypeAsync(request.LeaveType, cancellationToken);
         if (policy != null && !policy.IsActive)
         {
             _logger.LogWarning("Attempted to request inactive leave type {LeaveType}", request.LeaveType);
