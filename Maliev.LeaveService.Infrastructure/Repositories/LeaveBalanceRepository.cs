@@ -21,6 +21,51 @@ public class LeaveBalanceRepository : ILeaveBalanceRepository
             .FirstOrDefaultAsync(b => b.EmployeeId == employeeId && b.LeaveType == type && b.Year == year, cancellationToken);
     }
 
+    public async Task<LeaveBalance> GetOrCreateAsync(
+        Guid employeeId,
+        LeaveType type,
+        int year,
+        decimal entitlement,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await GetByEmployeeAndTypeAsync(employeeId, type, year, cancellationToken);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var balance = new LeaveBalance
+        {
+            Id = Guid.NewGuid(),
+            EmployeeId = employeeId,
+            LeaveType = type,
+            Year = year,
+            Entitled = entitlement,
+            Used = 0,
+            Pending = 0,
+            CarriedForward = 0
+        };
+
+        await _context.LeaveBalances.AddAsync(balance, cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return balance;
+        }
+        catch (DbUpdateException)
+        {
+            _context.Entry(balance).State = EntityState.Detached;
+            var savedByConcurrentInitializer = await GetByEmployeeAndTypeAsync(employeeId, type, year, cancellationToken);
+            if (savedByConcurrentInitializer != null)
+            {
+                return savedByConcurrentInitializer;
+            }
+
+            throw;
+        }
+    }
+
     public async Task<IEnumerable<LeaveBalance>> GetByEmployeeIdAsync(Guid employeeId, int year, CancellationToken cancellationToken = default)
     {
         return await _context.LeaveBalances

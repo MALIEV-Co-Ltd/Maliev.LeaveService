@@ -118,16 +118,29 @@ public class SubmitLeaveRequestCommandHandlerTests
             .ReturnsAsync(false);
         _policyRepositoryMock.Setup(r => r.GetByTypeAsync(command.LeaveType))
             .ReturnsAsync(new LeavePolicy { LeaveType = command.LeaveType, DefaultEntitlement = 20, IsActive = true });
+        _balanceRepositoryMock
+            .Setup(r => r.GetOrCreateAsync(command.EmployeeId, command.LeaveType, command.StartDate.Year, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LeaveBalance
+            {
+                EmployeeId = command.EmployeeId,
+                LeaveType = command.LeaveType,
+                Year = command.StartDate.Year,
+                Entitled = 20,
+                Used = 0,
+                Pending = 0
+            });
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
-        _balanceRepositoryMock.Verify(r => r.AddAsync(It.Is<LeaveBalance>(b =>
-            b.EmployeeId == command.EmployeeId &&
-            b.LeaveType == command.LeaveType &&
-            b.Entitled == 20)), Times.Once);
+        _balanceRepositoryMock.Verify(r => r.GetOrCreateAsync(
+            command.EmployeeId,
+            command.LeaveType,
+            command.StartDate.Year,
+            20,
+            It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(It.Is<LeaveBalance>(b => b.Pending == 2)), Times.Once);
     }
 

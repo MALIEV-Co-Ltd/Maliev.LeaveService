@@ -83,19 +83,12 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
                 return CommandResult.Failure($"No leave balance found for {request.LeaveType} in {year}.");
             }
 
-            balance = new LeaveBalance
-            {
-                Id = Guid.NewGuid(),
-                EmployeeId = request.EmployeeId,
-                LeaveType = request.LeaveType,
-                Year = year,
-                Entitled = policy.DefaultEntitlement,
-                Used = 0,
-                Pending = 0,
-                CarriedForward = 0
-            };
-
-            await _balanceRepository.AddAsync(balance, cancellationToken);
+            balance = await _balanceRepository.GetOrCreateAsync(
+                request.EmployeeId,
+                request.LeaveType,
+                year,
+                policy.DefaultEntitlement,
+                cancellationToken);
             _logger.LogInformation("Initialized missing {LeaveType} balance for employee {EmployeeId}, year {Year}",
                 request.LeaveType, request.EmployeeId, year);
         }
