@@ -42,6 +42,8 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
     public string CreateTestToken(string userId = "test-user", string[]? roles = null)
     {
+        roles ??= ["roles.leave.admin"];
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId),

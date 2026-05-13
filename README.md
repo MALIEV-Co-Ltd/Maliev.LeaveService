@@ -93,12 +93,22 @@ The service will be available at `http://localhost:5000/leave`. Access the inter
 
 All endpoints are prefixed with `/leave/v1/`.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/LeaveRequests` | Submit a new leave request |
-| GET | `/LeaveBalances/{employeeId}` | Get current leave balances |
-| POST | `/LeaveRequests/{id}/approve` | Approve a pending request |
-| GET | `/LeaveTypes` | List active policies and leave types |
+| Method | Endpoint | Permission | Description |
+|--------|----------|------------|-------------|
+| POST | `/LeaveRequests/{employeeId}` | `leave.requests.create` plus employee/self scope | Submit a new leave request |
+| GET | `/LeaveRequests/employee/{employeeId}` | `leave.requests.read` plus employee/self scope | Get leave requests for an employee |
+| GET | `/LeaveRequests/pending/{managerId}` | `leave.requests.read` plus manager/self scope | Get pending approvals for the current manager |
+| POST | `/LeaveRequests/{requestId}/decision?approverId={managerId}` | `leave.requests.approve` plus approver/self scope | Approve or reject a pending request |
+| PUT | `/LeaveRequests/{requestId}/cancel?requestedBy={employeeId}` | `leave.requests.cancel` plus employee/self scope | Cancel a leave request |
+| GET | `/LeaveBalances/{employeeId}` | `leave.requests.read` plus employee/self scope | Get current leave balances |
+| GET | `/LeaveTypes` | Policy read permission | List active policies and leave types |
+
+## Security Assumptions
+
+- Employee self-service endpoints must bind `employeeId`, `requestedBy`, `managerId`, and `approverId` route/query values to the authenticated employee claim.
+- Service tokens and leave admins may operate across employees; ordinary employee and manager tokens may not impersonate another employee or approver by changing route/query IDs.
+- Manager approval queues are scoped to the manager's own employee ID before application queries run.
+- All state-changing endpoints still require `[RequirePermission]`; the resource-scope guard is an additional check, not a replacement.
 
 ---
 

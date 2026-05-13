@@ -6,6 +6,7 @@ using Maliev.Aspire.ServiceDefaults.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
+using Maliev.LeaveService.Api.Security;
 
 namespace Maliev.LeaveService.Api.Controllers;
 
@@ -38,6 +39,11 @@ public class LeaveRequestsController : ControllerBase
     [RequirePermission(LeavePermissions.Create)]
     public async Task<IActionResult> Submit(Guid employeeId, [FromBody] SubmitLeaveRequestDto dto)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        {
+            return Forbid();
+        }
+
         var command = new SubmitLeaveRequestCommand
         {
             EmployeeId = employeeId,
@@ -68,6 +74,11 @@ public class LeaveRequestsController : ControllerBase
     [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetByEmployee(Guid employeeId, [FromQuery] int? year)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        {
+            return Forbid();
+        }
+
         var query = new GetLeaveRequestsQuery
         {
             EmployeeId = employeeId,
@@ -86,6 +97,11 @@ public class LeaveRequestsController : ControllerBase
     [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetPendingApprovals(Guid managerId)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, managerId))
+        {
+            return Forbid();
+        }
+
         var query = new GetPendingApprovalsQuery { ApproverId = managerId };
         var result = await _mediator.Send(query);
         return Ok(result);
@@ -107,6 +123,11 @@ public class LeaveRequestsController : ControllerBase
             return Ok(new { count = 0 });
         }
 
+        if (!LeaveUserAccess.CanActForEmployee(User, managerId))
+        {
+            return Forbid();
+        }
+
         var count = await _mediator.Send(new GetPendingApprovalsCountQuery { ApproverId = managerId }, cancellationToken);
         return Ok(new { count });
     }
@@ -122,6 +143,11 @@ public class LeaveRequestsController : ControllerBase
     [RequirePermission(LeavePermissions.Approve)]
     public async Task<IActionResult> ProcessDecision(Guid requestId, [FromQuery] Guid approverId, [FromBody] ApproveRejectLeaveDto dto)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, approverId))
+        {
+            return Forbid();
+        }
+
         var command = new ApproveRejectLeaveCommand
         {
             RequestId = requestId,
@@ -151,6 +177,11 @@ public class LeaveRequestsController : ControllerBase
     [RequirePermission(LeavePermissions.Cancel)]
     public async Task<IActionResult> Cancel(Guid requestId, [FromQuery] Guid requestedBy, [FromQuery] string? comments)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, requestedBy))
+        {
+            return Forbid();
+        }
+
         var command = new CancelLeaveRequestCommand
         {
             RequestId = requestId,

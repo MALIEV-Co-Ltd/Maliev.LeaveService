@@ -89,6 +89,7 @@ Maliev.LeaveService/
 - **JSON**: Check existing conventions in this service for naming policy
 - **Manual mapping**: Static extension methods (`ToDto()`, `ToEntity()`). AutoMapper is banned
 - **Validation**: `System.ComponentModel.DataAnnotations` on DTOs. FluentValidation is banned
+- **Resource scoping**: Employee/manager route and query identifiers must be checked against the authenticated employee claim unless the caller is a service token or leave admin. Do not trust `employeeId`, `requestedBy`, `managerId`, or `approverId` from the request alone.
 
 ### Common Patterns (Examples)
 

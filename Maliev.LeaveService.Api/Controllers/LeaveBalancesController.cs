@@ -1,6 +1,7 @@
 using Maliev.LeaveService.Application.Queries;
 using Maliev.LeaveService.Domain.Authorization;
 using Maliev.Aspire.ServiceDefaults.Authorization;
+using Maliev.LeaveService.Api.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
@@ -36,6 +37,11 @@ public class LeaveBalancesController : ControllerBase
     [RequirePermission(LeavePermissions.Read)]
     public async Task<IActionResult> GetBalances(Guid employeeId, [FromQuery] int? year)
     {
+        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        {
+            return Forbid();
+        }
+
         var query = new GetLeaveBalancesQuery
         {
             EmployeeId = employeeId,
