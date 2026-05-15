@@ -24,7 +24,8 @@ public class LeaveIAMRegistrationService : IAMRegistrationService
         return new[]
         {
             new PermissionRegistration { PermissionId = LeavePermissions.Create, Description = "Create leave requests" },
-            new PermissionRegistration { PermissionId = LeavePermissions.Read, Description = "Read leave requests and balances" },
+            new PermissionRegistration { PermissionId = LeavePermissions.Read, Description = "Read leave requests" },
+            new PermissionRegistration { PermissionId = LeavePermissions.BalanceRead, Description = "Read leave balances" },
             new PermissionRegistration { PermissionId = LeavePermissions.Approve, Description = "Approve or reject leave requests" },
             new PermissionRegistration { PermissionId = LeavePermissions.Cancel, Description = "Cancel leave requests" },
             new PermissionRegistration { PermissionId = LeavePermissions.Admin, Description = "Administrative access to leave management" },

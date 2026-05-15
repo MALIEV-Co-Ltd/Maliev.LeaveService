@@ -39,7 +39,7 @@ public class LeaveBalancesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Leave balance information.</returns>
     [HttpGet("{employeeId:guid}")]
-    [RequirePermission(LeavePermissions.Read)]
+    [RequirePermission(LeavePermissions.BalanceRead)]
     public async Task<IActionResult> GetBalances(
         Guid employeeId,
         [FromQuery] int? year,
