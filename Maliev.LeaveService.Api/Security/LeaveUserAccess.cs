@@ -34,7 +34,7 @@ internal static class LeaveUserAccess
 
     private static Guid? GetCurrentEmployeeId(ClaimsPrincipal user)
     {
-        foreach (var claimType in new[] { "sub", "employee_id", ClaimTypes.NameIdentifier, "principal_id" })
+        foreach (var claimType in new[] { "employee_id", "sub", ClaimTypes.NameIdentifier, "principal_id" })
         {
             var value = user.FindFirst(claimType)?.Value;
             if (Guid.TryParse(value, out var employeeId))

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Maliev.LeaveService.Application.DTOs.Requests;
 using Maliev.LeaveService.Application.DTOs.Responses;
 using Maliev.LeaveService.Domain.Enums;
@@ -155,6 +156,37 @@ public class LeaveApprovalTests : IAsyncLifetime
             approval.ApproverId == approverId && approval.Status == ApprovalStatus.Approved);
         Assert.Equal(0, updatedBalance.Pending);
         Assert.Equal(2, updatedBalance.Used);
+    }
+
+    [Fact]
+    public async Task SubmitLeaveRequest_UserTokenWithEmployeeIdClaim_AllowsSelfSubmission()
+    {
+        var employeeId = Guid.NewGuid();
+        var principalId = Guid.NewGuid();
+        var start = DateTimeOffset.UtcNow.AddDays(7);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            _factory.CreateTestToken(
+                principalId.ToString(),
+                roles: [],
+                additionalClaims: [new Claim("employee_id", employeeId.ToString())]));
+
+        var submit = new SubmitLeaveRequestDto
+        {
+            LeaveType = LeaveType.Annual,
+            StartDate = start,
+            EndDate = start.AddDays(1),
+            Reason = "Self-service leave request"
+        };
+
+        var submitResponse = await _client.PostAsJsonAsync(
+            $"/leave/v1/LeaveRequests/{employeeId}",
+            submit,
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower });
+        var submitBody = await submitResponse.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.Created, submitResponse.StatusCode);
+        Assert.Contains("id", submitBody, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

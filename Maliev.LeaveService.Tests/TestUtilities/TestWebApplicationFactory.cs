@@ -40,7 +40,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         Environment.SetEnvironmentVariable("CORS_ALLOWED_ORIGINS", "http://localhost:3000");
     }
 
-    public string CreateTestToken(string userId = "test-user", string[]? roles = null)
+    public string CreateTestToken(string userId = "test-user", string[]? roles = null, IEnumerable<Claim>? additionalClaims = null)
     {
         roles ??= ["roles.leave.admin"];
 
@@ -56,6 +56,11 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
+        }
+
+        if (additionalClaims is not null)
+        {
+            claims.AddRange(additionalClaims);
         }
 
         var key = new RsaSecurityKey(_testRsa);
