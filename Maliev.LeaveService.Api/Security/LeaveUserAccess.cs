@@ -1,3 +1,4 @@
+using Maliev.LeaveService.Application.Interfaces;
 using System.Security.Claims;
 
 namespace Maliev.LeaveService.Api.Security;
@@ -22,6 +23,27 @@ internal static class LeaveUserAccess
         return currentEmployeeId == employeeId;
     }
 
+    public static async Task<bool> CanActForEmployeeAsync(
+        ClaimsPrincipal user,
+        Guid employeeId,
+        IEmployeeServiceClient employeeServiceClient,
+        CancellationToken cancellationToken)
+    {
+        if (CanActForEmployee(user, employeeId))
+        {
+            return true;
+        }
+
+        var principalId = GetCurrentPrincipalId(user);
+        if (principalId is null)
+        {
+            return false;
+        }
+
+        var resolvedEmployeeId = await employeeServiceClient.GetEmployeeIdByPrincipalIdAsync(principalId.Value, cancellationToken);
+        return resolvedEmployeeId == employeeId;
+    }
+
     private static bool IsServiceOrAdmin(ClaimsPrincipal user)
     {
         return user.HasClaim(claim => claim.Type == ServiceNameClaim) ||
@@ -34,12 +56,26 @@ internal static class LeaveUserAccess
 
     private static Guid? GetCurrentEmployeeId(ClaimsPrincipal user)
     {
-        foreach (var claimType in new[] { "employee_id", "sub", ClaimTypes.NameIdentifier, "principal_id" })
+        foreach (var claimType in new[] { "employee_id" })
         {
             var value = user.FindFirst(claimType)?.Value;
             if (Guid.TryParse(value, out var employeeId))
             {
                 return employeeId;
+            }
+        }
+
+        return null;
+    }
+
+    private static Guid? GetCurrentPrincipalId(ClaimsPrincipal user)
+    {
+        foreach (var claimType in new[] { "principal_id", "sub", ClaimTypes.NameIdentifier })
+        {
+            var value = user.FindFirst(claimType)?.Value;
+            if (Guid.TryParse(value, out var principalId))
+            {
+                return principalId;
             }
         }
 

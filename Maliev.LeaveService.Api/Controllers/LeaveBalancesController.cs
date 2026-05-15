@@ -1,4 +1,5 @@
 using Maliev.LeaveService.Application.Queries;
+using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Domain.Authorization;
 using Maliev.Aspire.ServiceDefaults.Authorization;
 using Maliev.LeaveService.Api.Security;
@@ -17,14 +18,17 @@ namespace Maliev.LeaveService.Api.Controllers;
 public class LeaveBalancesController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IEmployeeServiceClient _employeeServiceClient;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LeaveBalancesController"/> class.
     /// </summary>
     /// <param name="mediator">The mediator instance.</param>
-    public LeaveBalancesController(IMediator mediator)
+    /// <param name="employeeServiceClient">The employee service client used for principal-to-employee access checks.</param>
+    public LeaveBalancesController(IMediator mediator, IEmployeeServiceClient employeeServiceClient)
     {
         _mediator = mediator;
+        _employeeServiceClient = employeeServiceClient;
     }
 
     /// <summary>
@@ -32,12 +36,16 @@ public class LeaveBalancesController : ControllerBase
     /// </summary>
     /// <param name="employeeId">The employee identifier.</param>
     /// <param name="year">Optional year filter.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Leave balance information.</returns>
     [HttpGet("{employeeId:guid}")]
     [RequirePermission(LeavePermissions.Read)]
-    public async Task<IActionResult> GetBalances(Guid employeeId, [FromQuery] int? year)
+    public async Task<IActionResult> GetBalances(
+        Guid employeeId,
+        [FromQuery] int? year,
+        CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, employeeId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -48,7 +56,7 @@ public class LeaveBalancesController : ControllerBase
             Year = year
         };
 
-        var result = await _mediator.Send(query);
+        var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
 }

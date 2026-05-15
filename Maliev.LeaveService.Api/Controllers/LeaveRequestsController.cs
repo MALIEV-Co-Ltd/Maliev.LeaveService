@@ -1,5 +1,6 @@
 using Maliev.LeaveService.Application.Commands;
 using Maliev.LeaveService.Application.DTOs.Requests;
+using Maliev.LeaveService.Application.Interfaces;
 using Maliev.LeaveService.Application.Queries;
 using Maliev.LeaveService.Domain.Authorization;
 using Maliev.Aspire.ServiceDefaults.Authorization;
@@ -19,14 +20,17 @@ namespace Maliev.LeaveService.Api.Controllers;
 public class LeaveRequestsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IEmployeeServiceClient _employeeServiceClient;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LeaveRequestsController"/> class.
     /// </summary>
     /// <param name="mediator">The mediator instance.</param>
-    public LeaveRequestsController(IMediator mediator)
+    /// <param name="employeeServiceClient">The employee service client used for principal-to-employee access checks.</param>
+    public LeaveRequestsController(IMediator mediator, IEmployeeServiceClient employeeServiceClient)
     {
         _mediator = mediator;
+        _employeeServiceClient = employeeServiceClient;
     }
 
     /// <summary>
@@ -34,12 +38,16 @@ public class LeaveRequestsController : ControllerBase
     /// </summary>
     /// <param name="employeeId">The employee identifier.</param>
     /// <param name="dto">The leave request data.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created leave request.</returns>
     [HttpPost("{employeeId:guid}")]
     [RequirePermission(LeavePermissions.Create)]
-    public async Task<IActionResult> Submit(Guid employeeId, [FromBody] SubmitLeaveRequestDto dto)
+    public async Task<IActionResult> Submit(
+        Guid employeeId,
+        [FromBody] SubmitLeaveRequestDto dto,
+        CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, employeeId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -55,7 +63,7 @@ public class LeaveRequestsController : ControllerBase
             ApproverId = dto.ApproverId
         };
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsSuccess)
         {
@@ -70,12 +78,16 @@ public class LeaveRequestsController : ControllerBase
     /// </summary>
     /// <param name="employeeId">The employee identifier.</param>
     /// <param name="year">Optional year filter.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of leave requests.</returns>
     [HttpGet("employee/{employeeId:guid}")]
     [RequirePermission(LeavePermissions.Read)]
-    public async Task<IActionResult> GetByEmployee(Guid employeeId, [FromQuery] int? year)
+    public async Task<IActionResult> GetByEmployee(
+        Guid employeeId,
+        [FromQuery] int? year,
+        CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, employeeId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, employeeId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -85,7 +97,7 @@ public class LeaveRequestsController : ControllerBase
             EmployeeId = employeeId,
             Year = year
         };
-        var result = await _mediator.Send(query);
+        var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
 
@@ -93,18 +105,19 @@ public class LeaveRequestsController : ControllerBase
     /// Gets pending leave approvals for a manager.
     /// </summary>
     /// <param name="managerId">The manager identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of pending leave approvals.</returns>
     [HttpGet("pending/{managerId:guid}")]
     [RequirePermission(LeavePermissions.Read)]
-    public async Task<IActionResult> GetPendingApprovals(Guid managerId)
+    public async Task<IActionResult> GetPendingApprovals(Guid managerId, CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, managerId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, managerId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
 
         var query = new GetPendingApprovalsQuery { ApproverId = managerId };
-        var result = await _mediator.Send(query);
+        var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
 
@@ -124,7 +137,7 @@ public class LeaveRequestsController : ControllerBase
             return Ok(new { count = 0 });
         }
 
-        if (!LeaveUserAccess.CanActForEmployee(User, managerId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, managerId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -139,12 +152,17 @@ public class LeaveRequestsController : ControllerBase
     /// <param name="requestId">The leave request identifier.</param>
     /// <param name="approverId">The approver identifier.</param>
     /// <param name="dto">The decision data.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The approval result.</returns>
     [HttpPost("{requestId:guid}/decision")]
     [RequirePermission(LeavePermissions.Approve)]
-    public async Task<IActionResult> ProcessDecision(Guid requestId, [FromQuery] Guid approverId, [FromBody] ApproveRejectLeaveDto dto)
+    public async Task<IActionResult> ProcessDecision(
+        Guid requestId,
+        [FromQuery] Guid approverId,
+        [FromBody] ApproveRejectLeaveDto dto,
+        CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, approverId))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, approverId, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -157,7 +175,7 @@ public class LeaveRequestsController : ControllerBase
             Comments = dto.Comments
         };
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsSuccess)
         {
@@ -173,12 +191,17 @@ public class LeaveRequestsController : ControllerBase
     /// <param name="requestId">The leave request identifier.</param>
     /// <param name="requestedBy">The person cancelling the request.</param>
     /// <param name="comments">Optional cancellation comments.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The cancellation result.</returns>
     [HttpPut("{requestId:guid}/cancel")]
     [RequirePermission(LeavePermissions.Cancel)]
-    public async Task<IActionResult> Cancel(Guid requestId, [FromQuery] Guid requestedBy, [FromQuery] string? comments)
+    public async Task<IActionResult> Cancel(
+        Guid requestId,
+        [FromQuery] Guid requestedBy,
+        [FromQuery] string? comments,
+        CancellationToken cancellationToken)
     {
-        if (!LeaveUserAccess.CanActForEmployee(User, requestedBy))
+        if (!await LeaveUserAccess.CanActForEmployeeAsync(User, requestedBy, _employeeServiceClient, cancellationToken))
         {
             return Forbid();
         }
@@ -190,7 +213,7 @@ public class LeaveRequestsController : ControllerBase
             Comments = comments
         };
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsSuccess)
         {
