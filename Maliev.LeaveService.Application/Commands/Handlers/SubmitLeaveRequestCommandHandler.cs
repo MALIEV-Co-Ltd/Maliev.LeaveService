@@ -124,6 +124,20 @@ public class SubmitLeaveRequestCommandHandler : IRequestHandler<SubmitLeaveReque
             CreatedAt = DateTimeOffset.UtcNow
         };
 
+        if (request.ApproverId is { } approverId &&
+            approverId != Guid.Empty &&
+            approverId != request.EmployeeId)
+        {
+            leaveRequest.Approvals.Add(new LeaveApproval
+            {
+                Id = Guid.NewGuid(),
+                LeaveRequestId = leaveRequest.Id,
+                ApproverId = approverId,
+                Status = ApprovalStatus.Pending,
+                DecidedAt = DateTimeOffset.UtcNow
+            });
+        }
+
         // 7. Update Balance (Move to Pending)
         balance.Pending += requestedDays;
 

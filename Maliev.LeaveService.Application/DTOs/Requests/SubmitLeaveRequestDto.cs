@@ -18,4 +18,6 @@ public class SubmitLeaveRequestDto
 
     [MaxLength(500)]
     public string? Reason { get; set; }
+
+    public Guid? ApproverId { get; set; }
 }

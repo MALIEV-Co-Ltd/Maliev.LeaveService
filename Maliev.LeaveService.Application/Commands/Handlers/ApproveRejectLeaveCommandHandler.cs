@@ -66,16 +66,19 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
             return CommandResult.Failure("Leave balance not found.");
         }
 
-        // Create Approval Record
-        var approval = new LeaveApproval
+        var approval = leaveRequest.Approvals.FirstOrDefault(a =>
+                a.Status == ApprovalStatus.Pending && a.ApproverId == request.ApproverId)
+            ?? leaveRequest.Approvals.FirstOrDefault(a => a.Status == ApprovalStatus.Pending);
+        var isNewApproval = approval is null;
+        approval ??= new LeaveApproval
         {
             Id = Guid.NewGuid(),
-            LeaveRequestId = leaveRequest.Id,
-            ApproverId = request.ApproverId,
-            Status = request.Decision,
-            Comments = request.Comments,
-            DecidedAt = DateTimeOffset.UtcNow
+            LeaveRequestId = leaveRequest.Id
         };
+        approval.ApproverId = request.ApproverId;
+        approval.Status = request.Decision;
+        approval.Comments = request.Comments;
+        approval.DecidedAt = DateTimeOffset.UtcNow;
 
         if (request.Decision == ApprovalStatus.Approved)
         {
@@ -136,7 +139,10 @@ public class ApproveRejectLeaveCommandHandler : IRequestHandler<ApproveRejectLea
 
         await _requestRepository.UpdateAsync(leaveRequest, cancellationToken);
         await _balanceRepository.UpdateAsync(balance, cancellationToken);
-        await _approvalRepository.AddAsync(approval, cancellationToken);
+        if (isNewApproval)
+        {
+            await _approvalRepository.AddAsync(approval, cancellationToken);
+        }
 
         _logger.LogInformation("Decision {Decision} recorded for request {RequestId} (Audit: FR-027 compliant)",
             request.Decision, leaveRequest.Id);

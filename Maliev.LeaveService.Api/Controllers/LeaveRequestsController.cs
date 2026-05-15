@@ -51,7 +51,8 @@ public class LeaveRequestsController : ControllerBase
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             HalfDayPeriod = dto.HalfDayPeriod,
-            Reason = dto.Reason
+            Reason = dto.Reason,
+            ApproverId = dto.ApproverId
         };
 
         var result = await _mediator.Send(command);

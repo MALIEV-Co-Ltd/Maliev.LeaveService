@@ -11,6 +11,7 @@ public class SubmitLeaveRequestCommand : IRequest<CommandResult>
     public DateTimeOffset EndDate { get; set; }
     public HalfDayPeriod HalfDayPeriod { get; set; }
     public string? Reason { get; set; }
+    public Guid? ApproverId { get; set; }
 }
 
 public class CommandResult
