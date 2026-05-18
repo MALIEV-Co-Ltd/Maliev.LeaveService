@@ -83,6 +83,10 @@ try
     if (Environment.GetEnvironmentVariable("SKIP_MIGRATIONS") != "true")
     {
         await app.MigrateDatabaseAsync<LeaveDbContext>();
+
+        await using var seedScope = app.Services.CreateAsyncScope();
+        var policyRepository = seedScope.ServiceProvider.GetRequiredService<ILeavePolicyRepository>();
+        await DefaultLeavePolicySeeder.SeedAsync(policyRepository, logger, app.Lifetime.ApplicationStopping);
     }
 
     // --- 9. Middleware Pipeline ---
