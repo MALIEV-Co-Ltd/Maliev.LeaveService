@@ -60,24 +60,24 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var harness = scope.ServiceProvider.GetRequiredService<ITestHarness>();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         // Ensure some policies exist
         var seeder = new DatabaseSeeder(context);
         await seeder.SeedAsync();
 
         // Act
         await harness.Bus.Publish(@event);
-        
+
         // Wait for consumer with generous timeout
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        
+
         // Wait for the message to be processed
         await Task.Delay(2000, cts.Token);
 
         // Assert - wait a bit for DB update to commit
         using var verifyScope = _factory.Services.CreateScope();
         var verifyContext = verifyScope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         List<LeaveBalance> balances = new();
         // Retry a few times if not yet populated
         for (int i = 0; i < 10 && !balances.Any(); i++)
@@ -85,7 +85,7 @@ public class EmployeeCreatedEventConsumerTests : IAsyncLifetime
             await Task.Delay(500, cts.Token);
             balances = await verifyContext.LeaveBalances.Where(b => b.EmployeeId == employeeId).ToListAsync();
         }
-        
+
         Assert.NotEmpty(balances);
         Assert.Contains(balances, b => b.LeaveType == LeaveType.Annual);
     }

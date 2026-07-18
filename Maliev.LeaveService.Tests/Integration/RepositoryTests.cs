@@ -72,7 +72,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
-        
+
         var balance = new LeaveBalance
         {
             Id = Guid.NewGuid(),
@@ -100,7 +100,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
-        
+
         var employeeId = Guid.NewGuid();
         var balance = new LeaveBalance
         {
@@ -130,7 +130,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
-        
+
         var employeeId = Guid.NewGuid();
         var balance = new LeaveBalance
         {
@@ -159,7 +159,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveBalanceRepository>();
-        
+
         var employeeId = Guid.NewGuid();
         var balance = new LeaveBalance
         {
@@ -190,7 +190,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveRequestRepository>();
-        
+
         var request = new LeaveRequest
         {
             Id = Guid.NewGuid(),
@@ -219,7 +219,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeaveRequestRepository>();
-        
+
         var employeeId = Guid.NewGuid();
         var request = new LeaveRequest
         {
@@ -264,7 +264,7 @@ public class RepositoryTests : IAsyncLifetime
         // Arrange
         using var scope = _serviceProvider.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<ILeavePolicyRepository>();
-        
+
         var policies = await repository.GetAllAsync();
         var policy = policies.First();
 

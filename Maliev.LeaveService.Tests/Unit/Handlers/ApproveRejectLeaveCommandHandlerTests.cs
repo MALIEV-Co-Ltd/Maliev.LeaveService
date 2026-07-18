@@ -87,7 +87,7 @@ public class ApproveRejectLeaveCommandHandlerTests
         Assert.Equal(LeaveRequestStatus.Approved, leaveRequest.Status);
         Assert.Equal(0, balance.Pending);
         Assert.Equal(5, balance.Used);
-        
+
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _approvalRepositoryMock.Verify(r => r.AddAsync(It.IsAny<LeaveApproval>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -142,7 +142,7 @@ public class ApproveRejectLeaveCommandHandlerTests
         Assert.Equal(LeaveRequestStatus.Rejected, leaveRequest.Status);
         Assert.Equal(0, balance.Pending);
         Assert.Equal(0, balance.Used);
-        
+
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _approvalRepositoryMock.Verify(r => r.AddAsync(It.IsAny<LeaveApproval>(), It.IsAny<CancellationToken>()), Times.Once);

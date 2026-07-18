@@ -35,12 +35,12 @@ public class LeaveBalancesControllerTests : IAsyncLifetime
     {
         // Arrange
         var employeeId = Guid.NewGuid();
-        
+
         // Seed balance
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
         var currentYear = DateTimeOffset.UtcNow.Year;
-        
+
         context.LeaveBalances.Add(TestDataBuilder.CreateLeaveBalance(employeeId, LeaveType.Annual, currentYear, 20));
         context.LeaveBalances.Add(TestDataBuilder.CreateLeaveBalance(employeeId, LeaveType.Sick, currentYear, 30));
         await context.SaveChangesAsync();
@@ -61,10 +61,10 @@ public class LeaveBalancesControllerTests : IAsyncLifetime
         // Arrange
         var employeeId = Guid.NewGuid();
         var year = DateTimeOffset.UtcNow.Year;
-        
+
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         context.LeaveBalances.Add(TestDataBuilder.CreateLeaveBalance(employeeId, LeaveType.Annual, year, 20));
         await context.SaveChangesAsync();
 

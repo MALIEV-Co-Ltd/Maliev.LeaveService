@@ -20,9 +20,9 @@ public class UndoCloseLeaveBalanceConsumerTests
         var loggerMock = new Mock<ILogger<UndoCloseLeaveBalanceCommandHandler>>();
         var handlerMock = new UndoCloseLeaveBalanceCommandHandler(balanceRepoMock.Object, loggerMock.Object);
         var consumer = new UndoCloseLeaveBalanceConsumer(handlerMock);
-        
+
         var command = CreateCommand(Guid.NewGuid());
-        
+
         var contextMock = new Mock<ConsumeContext<UndoCloseLeaveBalanceCommand>>();
         contextMock.Setup(c => c.Message).Returns(command);
         contextMock.Setup(c => c.CancellationToken).Returns(CancellationToken.None);
