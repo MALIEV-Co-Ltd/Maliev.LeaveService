@@ -24,7 +24,7 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgresContainer = 
+    private readonly PostgreSqlContainer _postgresContainer =
 #pragma warning disable CS0618
         new PostgreSqlBuilder().WithImage("postgres:18-alpine").Build();
     private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine").Build();
@@ -121,11 +121,22 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
             });
 
             // Mock IAM service client - return true for all permission checks to allow tests to pass
-            services.AddScoped<Maliev.Aspire.ServiceDefaults.IAM.IIamServiceClient>(sp => {
+            services.AddScoped<Maliev.Aspire.ServiceDefaults.IAM.IIamServiceClient>(sp =>
+            {
                 var mockIam = new Moq.Mock<Maliev.Aspire.ServiceDefaults.IAM.IIamServiceClient>();
                 mockIam.Setup(x => x.CheckPermissionAsync(Moq.It.IsAny<string>(), Moq.It.IsAny<string>(), Moq.It.IsAny<string?>(), Moq.It.IsAny<CancellationToken>()))
                     .ReturnsAsync(true);
                 return mockIam.Object;
+            });
+
+            services.RemoveAll<Maliev.LeaveService.Application.Interfaces.IEmployeeServiceClient>();
+            services.AddScoped<Maliev.LeaveService.Application.Interfaces.IEmployeeServiceClient>(sp =>
+            {
+                var mockEmployee = new Moq.Mock<Maliev.LeaveService.Application.Interfaces.IEmployeeServiceClient>();
+                mockEmployee
+                    .Setup(x => x.GetEmployeeIdByPrincipalIdAsync(Moq.It.IsAny<Guid>(), Moq.It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((Guid principalId, CancellationToken _) => principalId);
+                return mockEmployee.Object;
             });
 
             services.AddMassTransitTestHarness();
