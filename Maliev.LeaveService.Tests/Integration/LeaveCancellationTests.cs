@@ -34,10 +34,10 @@ public class LeaveCancellationTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         var startDate = DateTimeOffset.UtcNow.AddDays(7);
         var requestYear = startDate.Year;
-        
+
         var balance = await context.LeaveBalances.FirstOrDefaultAsync(b => b.EmployeeId == employeeId && b.Year == requestYear);
         if (balance == null)
         {
@@ -48,12 +48,12 @@ public class LeaveCancellationTests : IAsyncLifetime
 
         var request = TestDataBuilder.CreateLeaveRequest(employeeId, LeaveType.Annual, startDate, null, 5, status);
         context.LeaveRequests.Add(request);
-        
+
         if (status == LeaveRequestStatus.Pending)
             balance.Pending += 5;
         else if (status == LeaveRequestStatus.Approved)
             balance.Used += 5;
-        
+
         context.LeaveBalances.Update(balance);
         await context.SaveChangesAsync();
         return request.Id;
@@ -65,7 +65,7 @@ public class LeaveCancellationTests : IAsyncLifetime
         // Arrange
         var employeeId = Guid.NewGuid();
         var requestId = await SeedRequest(employeeId, LeaveRequestStatus.Pending);
-        
+
         // Act
         var response = await _client.PutAsync($"/leave/v1/LeaveRequests/{requestId}/cancel?requestedBy={employeeId}", null);
 
@@ -76,12 +76,12 @@ public class LeaveCancellationTests : IAsyncLifetime
             throw new Exception($"Request failed with {response.StatusCode}: {error}");
         }
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
         var updatedRequest = await context.LeaveRequests.FindAsync(requestId);
         var updatedBalance = context.LeaveBalances.First(b => b.EmployeeId == employeeId);
-        
+
         Assert.Equal(LeaveRequestStatus.Cancelled, updatedRequest?.Status);
         Assert.Equal(0, updatedBalance.Pending);
     }
@@ -92,7 +92,7 @@ public class LeaveCancellationTests : IAsyncLifetime
         // Arrange
         var employeeId = Guid.NewGuid();
         var requestId = await SeedRequest(employeeId, LeaveRequestStatus.Approved);
-        
+
         // Act
         var response = await _client.PutAsync($"/leave/v1/LeaveRequests/{requestId}/cancel?requestedBy={employeeId}", null);
 
@@ -103,12 +103,12 @@ public class LeaveCancellationTests : IAsyncLifetime
             throw new Exception($"Request failed with {response.StatusCode}: {error}");
         }
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
         var updatedRequest = await context.LeaveRequests.FindAsync(requestId);
         var updatedBalance = context.LeaveBalances.First(b => b.EmployeeId == employeeId);
-        
+
         Assert.Equal(LeaveRequestStatus.Cancelled, updatedRequest?.Status);
         Assert.Equal(0, updatedBalance.Used);
     }

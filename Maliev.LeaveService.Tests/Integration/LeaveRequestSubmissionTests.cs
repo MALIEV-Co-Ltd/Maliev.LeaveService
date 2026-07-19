@@ -34,7 +34,7 @@ public class LeaveRequestSubmissionTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         var currentYear = DateTimeOffset.UtcNow.Year;
         var nextYear = currentYear + 1;
 
@@ -44,7 +44,7 @@ public class LeaveRequestSubmissionTests : IAsyncLifetime
             context.LeaveBalances.Add(TestDataBuilder.CreateLeaveBalance(employeeId, LeaveType.Annual, currentYear, 20));
             context.LeaveBalances.Add(TestDataBuilder.CreateLeaveBalance(employeeId, LeaveType.Sick, currentYear, 30));
         }
-        
+
         // Seed balance for the employee for next year
         if (!await context.LeaveBalances.AnyAsync(b => b.EmployeeId == employeeId && b.Year == nextYear))
         {

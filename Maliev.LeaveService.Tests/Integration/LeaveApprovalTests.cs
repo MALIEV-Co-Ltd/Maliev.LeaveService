@@ -38,10 +38,10 @@ public class LeaveApprovalTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         var startDate = DateTimeOffset.UtcNow.AddDays(7);
         var requestYear = startDate.Year;
-        
+
         var balance = await context.LeaveBalances.FirstOrDefaultAsync(b => b.EmployeeId == employeeId && b.Year == requestYear);
         if (balance == null)
         {
@@ -52,10 +52,10 @@ public class LeaveApprovalTests : IAsyncLifetime
 
         var request = TestDataBuilder.CreateLeaveRequest(employeeId, LeaveType.Annual, startDate, null, 5);
         context.LeaveRequests.Add(request);
-        
+
         balance.Pending += 5;
         context.LeaveBalances.Update(balance);
-        
+
         await context.SaveChangesAsync();
         return request.Id;
     }
@@ -67,7 +67,7 @@ public class LeaveApprovalTests : IAsyncLifetime
         var employeeId = Guid.NewGuid();
         var requestId = await SeedPendingRequest(employeeId);
         var managerId = Guid.NewGuid();
-        
+
         var decision = new
         {
             decision = ApprovalStatus.Approved,
@@ -79,13 +79,13 @@ public class LeaveApprovalTests : IAsyncLifetime
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         // Verify in DB
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
         var updatedRequest = await context.LeaveRequests.FindAsync(requestId);
         var updatedBalance = context.LeaveBalances.First(b => b.EmployeeId == employeeId);
-        
+
         Assert.Equal(LeaveRequestStatus.Approved, updatedRequest?.Status);
         Assert.Equal(0, updatedBalance.Pending);
         Assert.Equal(5, updatedBalance.Used);
@@ -196,7 +196,7 @@ public class LeaveApprovalTests : IAsyncLifetime
         var employeeId = Guid.NewGuid();
         var requestId = await SeedPendingRequest(employeeId);
         var managerId = Guid.NewGuid();
-        
+
         var decision = new
         {
             decision = ApprovalStatus.Rejected,
@@ -208,13 +208,13 @@ public class LeaveApprovalTests : IAsyncLifetime
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         // Verify in DB
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
         var updatedRequest = await context.LeaveRequests.FindAsync(requestId);
         var updatedBalance = context.LeaveBalances.First(b => b.EmployeeId == employeeId);
-        
+
         Assert.Equal(LeaveRequestStatus.Rejected, updatedRequest?.Status);
         Assert.Equal(0, updatedBalance.Pending);
         Assert.Equal(0, updatedBalance.Used);

@@ -35,7 +35,7 @@ public class LeaveRequestsControllerTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<LeaveDbContext>();
-        
+
         var currentYear = DateTimeOffset.UtcNow.Year;
 
         if (!await context.LeaveBalances.AnyAsync(b => b.EmployeeId == employeeId && b.Year == currentYear))

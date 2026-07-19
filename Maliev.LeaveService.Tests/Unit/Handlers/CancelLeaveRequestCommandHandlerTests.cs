@@ -76,7 +76,7 @@ public class CancelLeaveRequestCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(LeaveRequestStatus.Cancelled, leaveRequest.Status);
         Assert.Equal(0, balance.Pending);
-        
+
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _publishEndpointMock.Verify(p => p.Publish(It.IsAny<LeaveRequestCancelledEvent>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -121,7 +121,7 @@ public class CancelLeaveRequestCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(LeaveRequestStatus.Cancelled, leaveRequest.Status);
         Assert.Equal(0, balance.Used);
-        
+
         _requestRepositoryMock.Verify(r => r.UpdateAsync(leaveRequest, It.IsAny<CancellationToken>()), Times.Once);
         _balanceRepositoryMock.Verify(r => r.UpdateAsync(balance, It.IsAny<CancellationToken>()), Times.Once);
         _notificationServiceMock.Verify(n => n.NotifyLeaveCancellationAsync(requestId), Times.Once);

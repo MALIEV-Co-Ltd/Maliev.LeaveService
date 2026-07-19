@@ -98,7 +98,10 @@ public class LeaveResourceAuthorizationTests : IAsyncLifetime
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
-            _factory.CreateTestToken(employeeId.ToString(), []));
+            _factory.CreateTestToken(
+                employeeId.ToString(),
+                [],
+                [new System.Security.Claims.Claim("employee_id", employeeId.ToString())]));
         return client;
     }
 }
