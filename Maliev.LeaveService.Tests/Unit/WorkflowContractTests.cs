@@ -70,7 +70,8 @@ public sealed class WorkflowContractTests
     {
         var bytes = File.ReadAllBytes(Path.Combine(Root, ".github", "dependabot.yml"));
         Assert.False(bytes.AsSpan().StartsWith(System.Text.Encoding.UTF8.Preamble));
-        Assert.StartsWith("version: 2\nupdates:\n", System.Text.Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
+        var source = System.Text.Encoding.UTF8.GetString(bytes).ReplaceLineEndings("\n");
+        Assert.StartsWith("version: 2\nupdates:\n", source, StringComparison.Ordinal);
     }
 
     [Fact]
