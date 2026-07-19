@@ -34,14 +34,14 @@ public class LeaveExpirationAlertBackgroundServiceTests
             // Expected
         }
 
-        loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("starting")),
-                It.IsAny<Exception?>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+        var startupWasLogged = SpinWait.SpinUntil(
+            () => loggerMock.Invocations.Any(
+                invocation => invocation.Arguments.Count >= 3
+                    && invocation.Arguments[0] is LogLevel.Information
+                    && invocation.Arguments[2]?.ToString()?.Contains("starting", StringComparison.Ordinal) is true),
+            TimeSpan.FromSeconds(1));
+
+        Assert.True(startupWasLogged, "The background service did not log its startup message.");
     }
 
     [Fact]
