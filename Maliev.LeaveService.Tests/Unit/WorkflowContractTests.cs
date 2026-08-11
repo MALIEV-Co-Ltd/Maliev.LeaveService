@@ -2,7 +2,7 @@ namespace Maliev.LeaveService.Tests.Unit;
 
 public sealed class WorkflowContractTests
 {
-    private const string CheckoutSha = "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0";
+    private const string CheckoutSha = "3d3c42e5aac5ba805825da76410c181273ba90b1";
     private const string SetupDotnetSha = "a98b56852c35b8e3190ac28c8c2271da59106c68";
     private const string AspireSha = "d79f954b2e7224b48bec75af4826bb38dd5f2a20";
     private const string MessagingSha = "2347023e8aa17dfd7071317c2ee5c4436e1d945a";
