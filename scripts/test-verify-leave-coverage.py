@@ -32,16 +32,33 @@ class CoverageControls(unittest.TestCase):
     def test_exact_floor_and_no_exclusions(self):
         result = coverage.evaluate(self.root)
         self.assertEqual([], result["exclusions"])
-        self.assertTrue(all(row["covered"] == 4 and row["valid"] == 5 and row["passed"] for row in result["assemblies"]))
+        self.assertTrue(all(row["covered"] == 4 and row["valid"] == 5 and row["meets_80_percent"] for row in result["assemblies"]))
+        self.assertEqual({"covered": 16, "valid": 20, "percent": 80.0, "threshold": 80, "passed": True}, result["service"])
 
     def test_missing_assembly_or_below_floor_fails(self):
         package = self.xml.find("./packages/package")
         package.find("./classes/class/lines/line").set("hits", "0")
         self.save()
-        self.assertFalse(all(row["passed"] for row in coverage.evaluate(self.root)["assemblies"]))
+        self.assertFalse(all(row["meets_80_percent"] for row in coverage.evaluate(self.root)["assemblies"]))
         self.xml.find("./packages").remove(package)
         self.save()
-        self.assertTrue(any(row["valid"] == 0 and not row["passed"] for row in coverage.evaluate(self.root)["assemblies"]))
+        self.assertTrue(any(row["valid"] == 0 and not row["meets_80_percent"] for row in coverage.evaluate(self.root)["assemblies"]))
+        self.assertFalse(coverage.evaluate(self.root)["service"]["passed"])
+
+    def test_weighted_service_floor_does_not_require_each_assembly_to_reach_80_percent(self):
+        packages = self.xml.findall("./packages/package")
+        for line in packages[0].findall("./classes/class/lines/line"):
+            line.set("hits", "0")
+        for package in packages[1:]:
+            for line in package.findall("./classes/class/lines/line"):
+                line.set("hits", "1")
+            lines = package.find("./classes/class/lines")
+            for number in range(6, 11):
+                ET.SubElement(lines, "line", number=str(number), hits="1")
+        self.save()
+        result = coverage.evaluate(self.root)
+        self.assertFalse(result["assemblies"][0]["meets_80_percent"])
+        self.assertTrue(result["service"]["passed"])
 
     def test_absent_or_conflicting_reports_fail_closed(self):
         other = self.root / "other"

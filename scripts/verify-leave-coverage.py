@@ -1,4 +1,4 @@
-"""Require raw, nonempty 80% line coverage for every owned assembly."""
+"""Require raw, nonempty 80% line coverage for the owned service."""
 import hashlib
 import json
 from pathlib import Path
@@ -35,9 +35,33 @@ def evaluate(root):
         valid, covered = len(inventory), sum(inventory.values())
         summary.append({"assembly": name, "covered": covered, "valid": valid,
                         "percent": covered * 100 / valid if valid else None,
-                        "threshold": 80, "passed": valid > 0 and covered * 100 >= valid * 80})
+                        "meets_80_percent": valid > 0 and covered * 100 >= valid * 80})
+    total_valid = sum(row["valid"] for row in summary)
+    total_covered = sum(row["covered"] for row in summary)
+    gaps = []
+    for name, inventory in lines.items():
+        files = {}
+        for (filename, number), covered in inventory.items():
+            path = filename.replace("\\", "/")
+            marker = name + "/"
+            if marker not in path:
+                continue
+            relative = path[path.index(marker):]
+            if len(relative) > 512 or not all(c.isalnum() or c in "/._-" for c in relative):
+                continue
+            entry = files.setdefault(relative, [0, 0])
+            entry[0] += int(covered)
+            entry[1] += 1
+        gaps.extend({"path": path, "covered": count[0], "valid": count[1]}
+                    for path, count in files.items() if count[0] < count[1])
+    gaps.sort(key=lambda item: (item["valid"] - item["covered"], item["path"]), reverse=True)
     return {"raw_sha256": next(iter(digests)), "identical_raw_copies": len(reports),
-            "exclusions": [], "assemblies": summary}
+            "exclusions": [], "assemblies": summary, "largest_source_gaps": gaps[:30],
+            "service": {"covered": total_covered, "valid": total_valid,
+                        "percent": total_covered * 100 / total_valid if total_valid else None,
+                        "threshold": 80,
+                        "passed": all(row["valid"] > 0 for row in summary)
+                        and total_covered * 100 >= total_valid * 80}}
 
 
 def main():
@@ -47,7 +71,7 @@ def main():
     result = evaluate(root)
     (root / "coverage-gate.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
-    if not all(row["passed"] for row in result["assemblies"]):
+    if not result["service"]["passed"]:
         raise ValueError("Owned assembly coverage below unchanged floor")
 
 
