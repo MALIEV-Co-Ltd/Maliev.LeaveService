@@ -7,42 +7,25 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 
 public class TestContainersFixture : IAsyncLifetime
 {
-    public PostgreSqlContainer PostgreSqlContainer { get; } =
+    private readonly LeaveContainerCustody _custody = new();
+    public PostgreSqlContainer PostgreSqlContainer { get; }
+    public RabbitMqContainer RabbitMqContainer { get; }
+    public RedisContainer RedisContainer { get; }
+
+    public TestContainersFixture()
+    {
 #pragma warning disable CS0618
-        new PostgreSqlBuilder().WithImage("postgres:18-alpine")
-        .WithDatabase("leave_db")
-        .WithUsername("postgres")
-        .WithPassword("postgres")
-        .Build();
-
-    public RabbitMqContainer RabbitMqContainer { get; } = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine")
-        .WithUsername("guest")
-        .WithPassword("guest")
-        .Build();
-
-    public RedisContainer RedisContainer { get; } = new RedisBuilder().WithImage("redis:8.4-alpine")
-        .Build();
+        PostgreSqlContainer = new PostgreSqlBuilder().WithImage("postgres:18-alpine")
+            .WithDatabase("leave_db").WithUsername("postgres").WithPassword("postgres")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "postgres")).Build();
+        RabbitMqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine")
+            .WithUsername("guest").WithPassword("guest")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "rabbitmq")).Build();
+        RedisContainer = new RedisBuilder().WithImage("redis:8.4-alpine")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "redis")).Build();
 #pragma warning restore CS0618
-
-    public async Task InitializeAsync()
-    {
-        await Task.WhenAll(
-            PostgreSqlContainer.StartAsync(),
-            RabbitMqContainer.StartAsync(),
-            RedisContainer.StartAsync()
-        );
     }
 
-    public async Task DisposeAsync()
-    {
-        await Task.WhenAll(
-            PostgreSqlContainer.DisposeAsync().AsTask(),
-            RabbitMqContainer.DisposeAsync().AsTask(),
-            RedisContainer.DisposeAsync().AsTask()
-        );
-    }
+    public Task InitializeAsync() => _custody.StartAsync(PostgreSqlContainer, RabbitMqContainer, RedisContainer);
+    public Task DisposeAsync() => _custody.DisposeAsync();
 }
-
-
-
-

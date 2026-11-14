@@ -24,16 +24,22 @@ namespace Maliev.LeaveService.Tests.TestUtilities;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgresContainer =
-#pragma warning disable CS0618
-        new PostgreSqlBuilder().WithImage("postgres:18-alpine").Build();
-    private readonly RedisContainer _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine").Build();
-    private readonly RabbitMqContainer _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine").Build();
-#pragma warning restore CS0618
+    private readonly LeaveContainerCustody _custody = new();
+    private readonly PostgreSqlContainer _postgresContainer;
+    private readonly RedisContainer _redisContainer;
+    private readonly RabbitMqContainer _rabbitmqContainer;
     private readonly RSA _testRsa = RSA.Create(2048);
 
     public TestWebApplicationFactory()
     {
+#pragma warning disable CS0618
+        _postgresContainer = new PostgreSqlBuilder().WithImage("postgres:18-alpine")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "postgres")).Build();
+        _redisContainer = new RedisBuilder().WithImage("redis:8.4-alpine")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "redis")).Build();
+        _rabbitmqContainer = new RabbitMqBuilder().WithImage("rabbitmq:4.2-alpine")
+            .WithCreateParameterModifier(parameters => _custody.Configure(parameters, "rabbitmq")).Build();
+#pragma warning restore CS0618
         // Set environment variables EARLY so Program.cs picks them up
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         Environment.SetEnvironmentVariable("CORS__AllowedOrigins__0", "http://localhost:3000");
@@ -271,27 +277,33 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(
-            _postgresContainer.StartAsync(),
-            _redisContainer.StartAsync(),
-            _rabbitmqContainer.StartAsync()
-        );
+        var started = false;
+        try
+        {
+            await _custody.StartAsync(_postgresContainer, _redisContainer, _rabbitmqContainer);
+            started = true;
 
-        // Set environment variables for connection strings AFTER containers start
-        Environment.SetEnvironmentVariable("ConnectionStrings__LeaveDbContext", _postgresContainer.GetConnectionString());
-        Environment.SetEnvironmentVariable("ConnectionStrings__redis", _redisContainer.GetConnectionString());
-        Environment.SetEnvironmentVariable("ConnectionStrings__rabbitmq", _rabbitmqContainer.GetConnectionString());
+            // Set environment variables for connection strings AFTER containers start
+            Environment.SetEnvironmentVariable("ConnectionStrings__LeaveDbContext", _postgresContainer.GetConnectionString());
+            Environment.SetEnvironmentVariable("ConnectionStrings__redis", _redisContainer.GetConnectionString());
+            Environment.SetEnvironmentVariable("ConnectionStrings__rabbitmq", _rabbitmqContainer.GetConnectionString());
 
-        // Initialize database once for all tests
-        await ResetDatabaseAsync();
+            // Initialize database once for all tests
+            await ResetDatabaseAsync();
+        }
+        catch (Exception primary)
+        {
+            try { if (started) await _custody.DisposeAsync(); }
+            catch (Exception cleanup) { throw new AggregateException(primary, cleanup); }
+            finally { _testRsa.Dispose(); }
+            throw;
+        }
     }
 
     public new async Task DisposeAsync()
     {
-        await _postgresContainer.DisposeAsync();
-        await _redisContainer.DisposeAsync();
-        await _rabbitmqContainer.DisposeAsync();
-        _testRsa.Dispose();
+        try { await _custody.DisposeAsync(); }
+        finally { _testRsa.Dispose(); }
     }
 }
 

@@ -4,7 +4,7 @@ This document defines the standards, commands, and conventions for AI agents wor
 
 ## 1. Environment & Build
 
-- **Platform**: .NET 10.0 (C#)
+- **Platform**: .NET 11.0 (C#)
 - **Frameworks**: ASP.NET Core, Entity Framework Core, MediatR, MassTransit, Aspire.
 - **Database**: PostgreSQL (Npgsql).
 

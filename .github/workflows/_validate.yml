@@ -8,6 +8,8 @@ jobs:
     name: validate
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    env:
+      MALIEV_TEST_RESOURCE_OWNER: leave-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout Leave service
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -31,7 +33,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.100
       - name: Restore
         working-directory: service
         run: GITHUB_ACTIONS=false dotnet restore Maliev.LeaveService.slnx --configfile nuget.validation.config
@@ -44,9 +46,34 @@ jobs:
       - name: Build
         working-directory: service
         run: GITHUB_ACTIONS=false dotnet build Maliev.LeaveService.slnx --configuration Release --no-restore
-      - name: Test
+      - name: Verify custody controls
         working-directory: service
-        run: GITHUB_ACTIONS=false dotnet test Maliev.LeaveService.slnx --configuration Release --no-build --no-restore --verbosity normal
+        run: |
+          python3 -B scripts/test-verify-leave-custody.py
+          python3 -B scripts/test-verify-leave-coverage.py
+      - name: Test
+        id: tests
+        timeout-minutes: 23
+        working-directory: service
+        shell: bash
+        env:
+          MALIEV_RESOURCE_LEDGER: ${{ runner.temp }}/leave-resource-ledger
+        run: |
+          set -euo pipefail
+          test ! -e "$MALIEV_RESOURCE_LEDGER"
+          mkdir -m 700 "$MALIEV_RESOURCE_LEDGER"
+          GITHUB_ACTIONS=false timeout --signal=TERM --kill-after=10s 1200s dotnet test Maliev.LeaveService.slnx --configuration Release --no-build --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory runner-results
+      - name: Verify owned resource cleanup
+        if: ${{ always() && steps.tests.outcome != 'skipped' }}
+        timeout-minutes: 3
+        working-directory: service
+        env:
+          LEAVE_TEST_OUTCOME: ${{ steps.tests.outcome }}
+          MALIEV_RESOURCE_LEDGER: ${{ runner.temp }}/leave-resource-ledger
+        run: python3 -B scripts/verify-leave-custody.py
+      - name: Require owned assembly coverage
+        working-directory: service
+        run: python3 -B scripts/verify-leave-coverage.py runner-results
       - name: Scan repository for secrets
         shell: bash
         run: |
