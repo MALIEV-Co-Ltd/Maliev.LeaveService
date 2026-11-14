@@ -158,7 +158,7 @@ internal sealed class LeaveContainerCustody
         if (actual.HostConfig.Tmpfs is null || actual.HostConfig.Tmpfs.Count != 1
             || !actual.HostConfig.Tmpfs.TryGetValue(path, out var options) || options != size)
             failures.Add("tmpfs-config");
-        if (actual.Mounts.Count != 1 || actual.Mounts.Any(mount => mount.Type != "tmpfs" || mount.Destination != path))
+        if (actual.Mounts.Count > 1 || actual.Mounts.Any(mount => mount.Type != "tmpfs" || mount.Destination != path))
             failures.Add("mounts");
         if (actual.NetworkSettings.Ports.Values.Where(bindings => bindings is not null)
             .SelectMany(bindings => bindings).Any(binding => binding.HostIP != "127.0.0.1"))

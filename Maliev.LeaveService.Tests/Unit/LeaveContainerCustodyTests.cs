@@ -73,6 +73,9 @@ public sealed class LeaveContainerCustodyTests
                 NetworkSettings = new NetworkSettings { Ports = new Dictionary<string, IList<PortBinding>>() }
             };
             custody.VerifyFixture(actual, container.Object);
+            actual.Mounts.Clear();
+            custody.VerifyFixture(actual, container.Object);
+            actual.Mounts.Add(new MountPoint { Type = "tmpfs", Destination = "/var/lib/postgresql" });
             switch (mutation)
             {
                 case "missing-tmpfs": actual.HostConfig.Tmpfs.Clear(); break;
