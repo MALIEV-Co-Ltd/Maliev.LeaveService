@@ -1,0 +1,67 @@
+name: Verify Leave image build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  image-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build default image without publication
+        timeout-minutes: 22
+        shell: bash
+        run: bash scripts/build-validation-image.sh
+      - name: Remove exact owned image
+        if: always()
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="leave-validation:${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if test -f "$RUNNER_TEMP/leave-image-build-started" && ! test -s "$RUNNER_TEMP/leave-image-build-settled"; then
+            echo 'Image build settlement is unverified; preserve daemon state' >&2
+            exit 1
+          fi
+          if test -f "$RUNNER_TEMP/leave-image-id"; then
+            id="$(cat "$RUNNER_TEMP/leave-image-id")"
+            [[ "$id" =~ ^sha256:[0-9a-f]{64}$ ]]
+            test "$(cat "$RUNNER_TEMP/leave-image-build-settled")" = "$id"
+            test "$(docker image inspect --format '{{.Id}}' "$tag")" = "$id"
+            docker image rm "$tag"
+            if docker image inspect "$tag" >/dev/null 2>&1; then exit 1; fi
+          elif docker image inspect "$tag" >/dev/null 2>&1; then
+            echo 'Image exists without ownership receipt; preserving it' >&2
+            exit 1
+          fi
+      - name: Remove exact disposable build context
+        if: always()
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          context="$RUNNER_TEMP/leave-image-context-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if test -e "$context"; then
+            if test -f "$RUNNER_TEMP/leave-image-build-started" && ! test -s "$RUNNER_TEMP/leave-image-build-settled"; then
+              echo 'Image build settlement is unverified; preserve its context' >&2
+              exit 1
+            fi
+            test -d "$context" && test ! -L "$context"
+            test "$(cat "$context/.owned-head")" = "$EXPECTED_HEAD"
+            rm -rf -- "$context"
+            test ! -e "$context"
+          fi

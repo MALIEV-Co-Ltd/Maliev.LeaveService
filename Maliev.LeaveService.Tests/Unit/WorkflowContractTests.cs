@@ -83,6 +83,25 @@ public sealed class WorkflowContractTests
         }
     }
 
+    [Fact]
+    public void ImageBuild_UsesPinnedPublicProjectsAndNoPublication()
+    {
+        var dockerfile = File.ReadAllText(Path.Combine(Root, "Maliev.LeaveService.Api", "Dockerfile"));
+        Assert.Contains("mcr.microsoft.com/dotnet/sdk:11.0", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("mcr.microsoft.com/dotnet/aspnet:11.0", dockerfile, StringComparison.Ordinal);
+        Assert.Contains(AspireSha, dockerfile, StringComparison.Ordinal);
+        Assert.Contains(MessagingSha, dockerfile, StringComparison.Ordinal);
+        Assert.Contains("COPY [\"Directory.Build.props\", \".\"]", dockerfile, StringComparison.Ordinal);
+        var workflow = ReadWorkflow("leave-image-build.yml");
+        Assert.Contains("github.event.pull_request.head.sha || github.sha", workflow, StringComparison.Ordinal);
+        Assert.Contains("bash scripts/build-validation-image.sh", workflow, StringComparison.Ordinal);
+        AssertSafe(workflow);
+        var script = File.ReadAllText(Path.Combine(Root, "scripts", "build-validation-image.sh"));
+        Assert.Contains("nuget.validation.config", script, StringComparison.Ordinal);
+        Assert.Contains("src=/dev/null", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("docker push", script, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void AssertSafe(string source)
     {
         foreach (var forbidden in new[]

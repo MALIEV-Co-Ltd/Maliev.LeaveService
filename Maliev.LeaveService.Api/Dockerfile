@@ -1,15 +1,25 @@
 # syntax=docker/dockerfile:1.4
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS base
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+ENV GITHUB_ACTIONS=false
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone --filter=blob:none --no-checkout https://github.com/MALIEV-Co-Ltd/Maliev.Aspire.git /Maliev.Aspire \
+    && git -C /Maliev.Aspire checkout --detach d79f954b2e7224b48bec75af4826bb38dd5f2a20 \
+    && test "$(git -C /Maliev.Aspire rev-parse HEAD)" = d79f954b2e7224b48bec75af4826bb38dd5f2a20 \
+    && git clone --filter=blob:none --no-checkout https://github.com/MALIEV-Co-Ltd/Maliev.MessagingContracts.git /Maliev.MessagingContracts \
+    && git -C /Maliev.MessagingContracts checkout --detach 2347023e8aa17dfd7071317c2ee5c4436e1d945a \
+    && test "$(git -C /Maliev.MessagingContracts rev-parse HEAD)" = 2347023e8aa17dfd7071317c2ee5c4436e1d945a
 
 COPY ["nuget.config", "."]
+COPY ["Directory.Build.props", "."]
 COPY ["Maliev.LeaveService.Api/Maliev.LeaveService.Api.csproj", "Maliev.LeaveService.Api/"]
 COPY ["Maliev.LeaveService.Application/Maliev.LeaveService.Application.csproj", "Maliev.LeaveService.Application/"]
 COPY ["Maliev.LeaveService.Domain/Maliev.LeaveService.Domain.csproj", "Maliev.LeaveService.Domain/"]
