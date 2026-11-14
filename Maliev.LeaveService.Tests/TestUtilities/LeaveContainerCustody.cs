@@ -143,19 +143,28 @@ internal sealed class LeaveContainerCustody
             var image when image.EndsWith("redis:8.4-alpine", StringComparison.Ordinal) => (256L * 1024 * 1024, "/data", "rw,size=64m"),
             _ => throw new InvalidOperationException("Unrecognized fixture image; preserve uncertain resource.")
         };
-        if (actual.ID != container.Id || actual.Created != container.CreatedTime || actual.Config.Image != container.Image.FullName
-            || !actual.Config.Labels.TryGetValue("maliev.test.owner", out var owner) || owner != _owner
+        var failures = new List<string>();
+        if (actual.ID != container.Id || actual.Created != container.CreatedTime || actual.Config.Image != container.Image.FullName)
+            failures.Add("identity");
+        if (!actual.Config.Labels.TryGetValue("maliev.test.owner", out var owner) || owner != _owner
             || !actual.Config.Labels.TryGetValue("maliev.test.fixture", out var fixture) || fixture != _fixture
             || !actual.Config.Labels.TryGetValue("maliev.test.persistent-data", out var persistent) || persistent != "false"
-            || !actual.Config.Labels.TryGetValue("maliev.test.expires-utc", out var expiry) || expiry != _expiry
-            || actual.HostConfig.Memory != memory || actual.HostConfig.MemorySwap != memory
-            || actual.HostConfig.NanoCPUs != 750_000_000 || actual.HostConfig.PidsLimit != 128
-            || actual.HostConfig.Tmpfs is null || actual.HostConfig.Tmpfs.Count != 1
-            || !actual.HostConfig.Tmpfs.TryGetValue(path, out var options) || options != size
-            || actual.Mounts.Count != 1 || actual.Mounts.Any(mount => mount.Type != "tmpfs" || mount.Destination != path)
-            || actual.NetworkSettings.Ports.Values.Where(bindings => bindings is not null)
-                .SelectMany(bindings => bindings).Any(binding => binding.HostIP != "127.0.0.1"))
-            throw new InvalidOperationException("Exact disposable container custody could not be verified.");
+            || !actual.Config.Labels.TryGetValue("maliev.test.expires-utc", out var expiry) || expiry != _expiry)
+            failures.Add("labels");
+        if (actual.HostConfig.Memory != memory || actual.HostConfig.MemorySwap != memory)
+            failures.Add("memory");
+        if (actual.HostConfig.NanoCPUs != 750_000_000 || actual.HostConfig.PidsLimit != 128)
+            failures.Add("cpu-or-pids");
+        if (actual.HostConfig.Tmpfs is null || actual.HostConfig.Tmpfs.Count != 1
+            || !actual.HostConfig.Tmpfs.TryGetValue(path, out var options) || options != size)
+            failures.Add("tmpfs-config");
+        if (actual.Mounts.Count != 1 || actual.Mounts.Any(mount => mount.Type != "tmpfs" || mount.Destination != path))
+            failures.Add("mounts");
+        if (actual.NetworkSettings.Ports.Values.Where(bindings => bindings is not null)
+            .SelectMany(bindings => bindings).Any(binding => binding.HostIP != "127.0.0.1"))
+            failures.Add("loopback");
+        if (failures.Count != 0)
+            throw new InvalidOperationException("Exact disposable container custody could not be verified: " + string.Join(", ", failures));
     }
 
     private async Task ReleaseAsync(IContainer container)

@@ -20,6 +20,20 @@ git archive "$EXPECTED_HEAD" | tar -x -C "$context"
 # The tracked public NuGet configuration replaces only the disposable context input.
 cp -- "$context/nuget.validation.config" "$context/nuget.config"
 cmp -- "$context/nuget.validation.config" "$context/nuget.config"
+# Only this disposable Dockerfile substitutes the pinned sibling's private-feed
+# config as well. Production inputs and secret mounts remain unchanged.
+python3 - "$context/Maliev.LeaveService.Api/Dockerfile" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+content = path.read_bytes()
+needle = b'COPY ["nuget.config", "."]'
+if content.count(needle) != 1:
+    raise SystemExit("Unexpected Dockerfile config instruction")
+newline = b'\r\n' if b'\r\n' in content else b'\n'
+path.write_bytes(content.replace(needle, needle + newline +
+    b'RUN test -f /Maliev.Aspire/nuget.config && cp /src/nuget.config /Maliev.Aspire/nuget.config', 1))
+PY
 printf '%s\n' "$EXPECTED_HEAD" > "$RUNNER_TEMP/leave-image-build-started"
 timeout --signal=TERM --kill-after=10s 1200s docker build --progress=plain \
   --secret id=nuget_username,src=/dev/null \
